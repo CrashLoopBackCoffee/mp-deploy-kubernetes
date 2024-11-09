@@ -1,0 +1,21 @@
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.13"
+pulumi = ">=3.0.0,<4.0.0"
+pulumi-proxmoxve = "^6.15.2"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.1.8"
+pyright = "^1.1.368"
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.format]
+quote-style = "single"

@@ -1,0 +1,11 @@
+name: deploy-kubernetes
+description: Kubernetes stack on Proxmox cluster
+runtime:
+  name: python
+  options:
+    toolchain: poetry
+    virtualenv: .venv
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: python
