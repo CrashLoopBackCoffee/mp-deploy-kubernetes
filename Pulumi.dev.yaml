@@ -1,0 +1,4 @@
+config:
+  deploy-kubernetes:pve:
+    node-name: pve
+  deploy-kubernetes:cloud-image: https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img
