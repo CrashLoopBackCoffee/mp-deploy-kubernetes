@@ -7,8 +7,8 @@ package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.13"
-pulumi = ">=3.0.0,<4.0.0"
-pulumi-proxmoxve = "^6.15.2"
+pulumi = "^3.139.0"
+pulumi-proxmoxve = "^6.15.3"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.1.8"
