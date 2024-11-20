@@ -1,0 +1,18 @@
+#cloud-config
+users:
+  # - default
+  - name: mike
+    groups:
+      - sudo
+    shell: /bin/bash
+    passwd: $6$fb9sD5hQi46KCYtd$zxEWPkq.cQ2gi0RJQETGj2lHIxjGakBDEQICWhkjRX0Ht1AZbyrJAPg263F4rrFiiUlagewT5mwJ1RT/8f8DJ0
+    lock_passwd: false
+    sudo: ALL=(ALL) NOPASSWD:ALL
+runcmd:
+  - apt-get update -y
+  - apt-get upgrade -y
+  - apt-get install -y qemu-guest-agent net-tools
+  # - timedatectl set-timezone  America/Toronto
+  - systemctl enable qemu-guest-agent
+  - systemctl start qemu-guest-agent
+  - echo "done" > /tmp/cloud-config.done
