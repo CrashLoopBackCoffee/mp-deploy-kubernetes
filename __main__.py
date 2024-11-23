@@ -5,7 +5,10 @@ import pathlib
 import pulumi
 import pulumi_proxmoxve as proxmoxve
 
-config = pulumi.Config()
+from model import Config
+
+pulumi_config = pulumi.Config()
+config = Config.model_validate(pulumi_config.require_object('config'))
 
 # we will use PVE PROD to create DEV VMs, there is no point in using slow VM performance on PVE DEV:
 proxmox_stack_prod = pulumi.StackReference(f'{pulumi.get_organization()}/deploy-proxmox/prod')
@@ -21,27 +24,24 @@ provider = proxmoxve.Provider(
     ),
 )
 
-pve_config = config.require_secret_object('pve')
-node_name = pve_config['node-name']
 stack_name = pulumi.get_stack()
 
 cloud_image = proxmoxve.download.File(
     'cloud-image',
     content_type='iso',
     datastore_id='local',
-    node_name=node_name,
+    node_name=config.node_name,
     overwrite=False,
-    url=config.require('cloud-image'),
+    url=str(config.cloud_image),
     opts=pulumi.ResourceOptions(provider=provider),
 )
 
-master_config = config.require_object('master-0')
-master_name = f'k8s-master-{stack_name}-0'
-
+master_config = config.control_plane_vms[0]
+master_name = f'{master_config.name}-{stack_name}'
 
 cloud_config = proxmoxve.storage.File(
-    'cloud_config',
-    node_name=node_name,
+    'cloud-config',
+    node_name=config.node_name,
     datastore_id='local',
     content_type='snippets',
     source_raw=proxmoxve.storage.FileSourceRawArgs(
@@ -55,9 +55,9 @@ cloud_config = proxmoxve.storage.File(
 master_vm = proxmoxve.vm.VirtualMachine(
     master_name,
     name=master_name,
-    vm_id=master_config['vmid'],
+    vm_id=master_config.vmid,
     tags=[stack_name],
-    node_name=node_name,
+    node_name=config.node_name,
     description='Kubernetes Master, maintained with Pulumi.',
     # cpu=proxmoxve.vm.VirtualMachineCpuArgs(cores=2),
     # memory=proxmoxve.vm.VirtualMachineMemoryArgs(dedicated=2048),
@@ -79,10 +79,6 @@ master_vm = proxmoxve.vm.VirtualMachine(
                 ipv4=proxmoxve.vm.VirtualMachineInitializationIpConfigIpv4Args(address='dhcp')
             )
         ],
-        # user_account=proxmoxve.vm.VirtualMachineInitializationUserAccountArgs(
-        #     username='root',
-        #     password='holladiewaldfee',
-        # ),
         user_data_file_id=cloud_config.id,
     ),
     opts=pulumi.ResourceOptions(
@@ -94,4 +90,4 @@ master_vm = proxmoxve.vm.VirtualMachine(
 )
 
 
-# pulumi.export('vm IPs', master_vm.ipv4_addresses)
+pulumi.export(f'{master_name}-ipv4', master_vm.ipv4_addresses[1][0])

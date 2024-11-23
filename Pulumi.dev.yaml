@@ -1,6 +1,7 @@
 config:
-  deploy-kubernetes:pve:
+  deploy-kubernetes:config:
     node-name: pve
-  deploy-kubernetes:cloud-image: https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img
-  deploy-kubernetes:master-0:
-    vmid: 1100
+    cloud-image: https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img
+    control-plane-vms:
+      - name: k8s-master-0
+        vmid: 1100
