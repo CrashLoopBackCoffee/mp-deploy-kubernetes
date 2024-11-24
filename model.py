@@ -14,6 +14,7 @@ class ConfigBaseModel(pydantic.BaseModel):
 class VirtualMachine(ConfigBaseModel):
     name: str
     vmid: int
+    ssh_public_key: str
 
 
 class Config(ConfigBaseModel):
