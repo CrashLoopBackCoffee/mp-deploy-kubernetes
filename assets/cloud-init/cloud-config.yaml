@@ -9,6 +9,7 @@ users:
     lock_passwd: false
     sudo: ALL=(ALL) NOPASSWD:ALL
 runcmd:
+  - hostnamectl set-hostname {{ name}}
   - apt-get update -y
   - apt-get upgrade -y
   - apt-get install -y qemu-guest-agent net-tools

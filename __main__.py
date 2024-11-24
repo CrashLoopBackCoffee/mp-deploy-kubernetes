@@ -2,6 +2,7 @@
 
 import pathlib
 
+import jinja2
 import pulumi
 import pulumi_proxmoxve as proxmoxve
 
@@ -45,7 +46,9 @@ cloud_config = proxmoxve.storage.File(
     datastore_id='local',
     content_type='snippets',
     source_raw=proxmoxve.storage.FileSourceRawArgs(
-        data=pathlib.Path('assets/cloud-init/cloud-config.yaml').read_text(),
+        data=jinja2.Template(
+            pathlib.Path('assets/cloud-init/cloud-config.yaml').read_text()
+        ).render(master_config.model_dump()),
         file_name=f'{master_name}.yaml',
     ),
     opts=pulumi.ResourceOptions(provider=provider, delete_before_replace=True),
