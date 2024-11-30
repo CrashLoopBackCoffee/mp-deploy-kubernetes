@@ -62,8 +62,13 @@ master_vm = proxmoxve.vm.VirtualMachine(
     tags=[stack_name],
     node_name=config.node_name,
     description='Kubernetes Master, maintained with Pulumi.',
-    # cpu=proxmoxve.vm.VirtualMachineCpuArgs(cores=2),
-    # memory=proxmoxve.vm.VirtualMachineMemoryArgs(dedicated=2048),
+    cpu=proxmoxve.vm.VirtualMachineCpuArgs(cores=2),
+    memory=proxmoxve.vm.VirtualMachineMemoryArgs(
+        # unlike what the names suggest, `floating` is the minimum memory and `dediacted` the
+        # potential maximum, when ballooning:
+        dedicated=4096,
+        floating=2048,
+    ),
     cdrom=proxmoxve.vm.VirtualMachineCdromArgs(enabled=False),
     disks=[
         proxmoxve.vm.VirtualMachineDiskArgs(
