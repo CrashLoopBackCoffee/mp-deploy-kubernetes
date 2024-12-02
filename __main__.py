@@ -41,9 +41,7 @@ master_config = config.control_plane_vms[0]
 master_name = f'{master_config.name}-{stack_name}'
 
 # serialize master config and extend with global config attributes:
-master_config_dict = master_config.model_dump() | {
-    'kubernetes_version': config.kubernetes_version,
-}
+master_config_dict = master_config.model_dump() | {}
 
 cloud_config = proxmoxve.storage.File(
     'cloud-config',

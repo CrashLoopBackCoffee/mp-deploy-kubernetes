@@ -19,6 +19,5 @@ class VirtualMachine(ConfigBaseModel):
 
 class Config(ConfigBaseModel):
     node_name: str
-    kubernetes_version: str
     cloud_image: pydantic.AnyHttpUrl
     control_plane_vms: list[VirtualMachine]

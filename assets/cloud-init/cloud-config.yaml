@@ -9,42 +9,15 @@ users:
       - "{{ ssh_public_key }}"
     lock_passwd: true
     sudo: ALL=(ALL) NOPASSWD:ALL
-write_files:
-  - path: /etc/modules-load.d/k8s.conf
-    permissions: "0644"
-    content: |
-      overlay
-      br_netfilter
-  - path: /etc/sysctl.d/k8s.conf
-    permissions: "0644"
-    content: |
-      net.bridge.bridge-nf-call-iptables  = 1
-      net.bridge.bridge-nf-call-ip6tables = 1
-      net.ipv4.ip_forward                 = 1
-  - path: /etc/containerd/config.toml
-    permissions: "0644"
-    content: |
-      version = 2
-
-      [plugins]
-        [plugins."io.containerd.grpc.v1.cri"]
-          [plugins."io.containerd.grpc.v1.cri".containerd]
-            [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
-              [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
-              SystemdCgroup = true
 runcmd:
   # system update and prep:
   - hostnamectl set-hostname {{ name }}
-  - modprobe overlay
-  - modprobe br_netfilter
-  - sysctl --system
   - timedatectl set-timezone Europe/Berlin
   - systemctl restart systemd-timesyncd
   - apt-get update -y
   - apt-get upgrade -y
   - DEBIAN_FRONTEND=noninteractive apt-get install -y
     vim
-    qemu-guest-agent
     net-tools
     apt-transport-https
     ca-certificates
@@ -55,21 +28,16 @@ runcmd:
   - swapoff -a
   - sed -i '/\bswap\b/ s/^\(.*\)$/#\1/' /etc/fstab
 
-  # kubernetes installation:
-  - install -m 0755 -d /etc/apt/keyrings
-  - curl -fsSL https://pkgs.k8s.io/core:/stable:/{{ kubernetes_version }}/deb/Release.key |
-    gpg --dearmor -o /etc/apt/keyrings/kubernetes-archive-keyring.gpg
-  - echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://pkgs.k8s.io/core:/stable:/{{ kubernetes_version }}/deb/ /' >
-    /etc/apt/sources.list.d/kubernetes.list
-  - apt-get update -y
-  - DEBIAN_FRONTEND=noninteractive apt-get install -y
-    kubeadm
-    kubelet
-    kubectl
-    containerd
-  - apt-mark hold kubelet kubeadm kubectl
-  - systemctl enable --now kubelet
+  # microk8s installation:
+  - snap install microk8s --classic
+  - usermod -a -G microk8s mike
+  - microk8s status --wait-ready
+  # TODO: move username to config.
+  - mkdir -p /home/mike/.kube
+  - chown -R mike /home/mike/.kube
+  - microk8s config > /home/mike/.kube/config
 
   # start guest agent last to keep Pulumi waiting until all of the above it ready:
+  - DEBIAN_FRONTEND=noninteractive apt-get install -y qemu-guest-agent
   - systemctl enable --now qemu-guest-agent
   - echo "done" > /tmp/cloud-config.done
