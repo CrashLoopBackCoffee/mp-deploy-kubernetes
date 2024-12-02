@@ -21,6 +21,17 @@ write_files:
       net.bridge.bridge-nf-call-iptables  = 1
       net.bridge.bridge-nf-call-ip6tables = 1
       net.ipv4.ip_forward                 = 1
+  - path: /etc/containerd/config.toml
+    permissions: "0644"
+    content: |
+      version = 2
+
+      [plugins]
+        [plugins."io.containerd.grpc.v1.cri"]
+          [plugins."io.containerd.grpc.v1.cri".containerd]
+            [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+              [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+              SystemdCgroup = true
 runcmd:
   # system update and prep:
   - hostnamectl set-hostname {{ name }}
@@ -39,26 +50,26 @@ runcmd:
     ca-certificates
     curl
     gpg
-  - systemctl enable qemu-guest-agent
 
-  # docker installation:
-  - sudo install -m 0755 -d /etc/apt/keyrings
-  - sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-  - sudo chmod a+r /etc/apt/keyrings/docker.asc
-  - echo
-    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu
-    $(. /etc/os-release && echo "$VERSION_CODENAME") stable" |
-    sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-  - sudo apt-get update -y
-  - sudo apt-get install -y
-    docker-ce
-    docker-ce-cli
-    containerd.io
-    docker-buildx-plugin
-    docker-compose-plugin
-  - sudo systemctl enable docker
-  - sudo systemctl start docker
+  # disable swap:
+  - swapoff -a
+  - sed -i '/\bswap\b/ s/^\(.*\)$/#\1/' /etc/fstab
+
+  # kubernetes installation:
+  - install -m 0755 -d /etc/apt/keyrings
+  - curl -fsSL https://pkgs.k8s.io/core:/stable:/{{ kubernetes_version }}/deb/Release.key |
+    gpg --dearmor -o /etc/apt/keyrings/kubernetes-archive-keyring.gpg
+  - echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://pkgs.k8s.io/core:/stable:/{{ kubernetes_version }}/deb/ /' >
+    /etc/apt/sources.list.d/kubernetes.list
+  - apt-get update -y
+  - DEBIAN_FRONTEND=noninteractive apt-get install -y
+    kubeadm
+    kubelet
+    kubectl
+    containerd
+  - apt-mark hold kubelet kubeadm kubectl
+  - systemctl enable --now kubelet
 
   # start guest agent last to keep Pulumi waiting until all of the above it ready:
-  - systemctl start qemu-guest-agent
+  - systemctl enable --now qemu-guest-agent
   - echo "done" > /tmp/cloud-config.done

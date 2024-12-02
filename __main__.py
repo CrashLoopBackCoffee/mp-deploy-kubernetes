@@ -40,6 +40,11 @@ cloud_image = proxmoxve.download.File(
 master_config = config.control_plane_vms[0]
 master_name = f'{master_config.name}-{stack_name}'
 
+# serialize master config and extend with global config attributes:
+master_config_dict = master_config.model_dump() | {
+    'kubernetes_version': config.kubernetes_version,
+}
+
 cloud_config = proxmoxve.storage.File(
     'cloud-config',
     node_name=config.node_name,
@@ -48,7 +53,7 @@ cloud_config = proxmoxve.storage.File(
     source_raw=proxmoxve.storage.FileSourceRawArgs(
         data=jinja2.Template(
             pathlib.Path('assets/cloud-init/cloud-config.yaml').read_text()
-        ).render(master_config.model_dump()),
+        ).render(master_config_dict),
         file_name=f'{master_name}.yaml',
     ),
     opts=pulumi.ResourceOptions(provider=provider, delete_before_replace=True),
