@@ -1,7 +1,7 @@
 #cloud-config
 users:
   - default
-  - name: mike
+  - name: "{{ username }}"
     groups:
       - sudo
     shell: /bin/bash
@@ -30,12 +30,11 @@ runcmd:
 
   # microk8s installation:
   - snap install microk8s --classic
-  - usermod -a -G microk8s mike
+  - usermod -a -G microk8s {{ username }}
   - microk8s status --wait-ready
-  # TODO: move username to config.
-  - mkdir -p /home/mike/.kube
-  - chown -R mike /home/mike/.kube
-  - microk8s config > /home/mike/.kube/config
+  - mkdir -p /home/{{ username }}/.kube
+  - chown -R {{ username }} /home/{{ username }}/.kube
+  - microk8s config > /home/{{ username }}/.kube/config
 
   # start guest agent last to keep Pulumi waiting until all of the above it ready:
   - DEBIAN_FRONTEND=noninteractive apt-get install -y qemu-guest-agent

@@ -5,4 +5,5 @@ config:
     control-plane-vms:
       - name: k8s-master-0
         vmid: 1100
+        username: mike
         ssh-public-key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIThrWKIoEj20S3DosaiKBRUGA89qe1xz9hch2+VhSGd mpagel@k8s-dev

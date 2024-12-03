@@ -100,5 +100,4 @@ master_vm = proxmoxve.vm.VirtualMachine(
     ),
 )
 
-
 pulumi.export(f'{master_name}-ipv4', master_vm.ipv4_addresses[1][0])
