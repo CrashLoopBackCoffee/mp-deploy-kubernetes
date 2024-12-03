@@ -11,14 +11,19 @@ class ConfigBaseModel(pydantic.BaseModel):
     )
 
 
+class VirtualMachineCommon(ConfigBaseModel):
+    username: str
+    ssh_public_key: str
+    ssh_private_key: str
+
+
 class VirtualMachine(ConfigBaseModel):
     name: str
     vmid: int
-    username: str
-    ssh_public_key: str
 
 
 class Config(ConfigBaseModel):
     node_name: str
     cloud_image: pydantic.AnyHttpUrl
+    all_vms: VirtualMachineCommon
     control_plane_vms: list[VirtualMachine]
