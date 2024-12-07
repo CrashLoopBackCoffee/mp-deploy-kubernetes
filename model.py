@@ -24,6 +24,7 @@ class VirtualMachine(ConfigBaseModel):
 
 class Config(ConfigBaseModel):
     node_name: str
-    vm_image: pydantic.AnyHttpUrl
+    talos_boot_image: pydantic.AnyHttpUrl
+    talos_image: str
     all_vms: VirtualMachineCommon
     control_plane_vms: list[VirtualMachine]

@@ -1,8 +1,9 @@
 config:
   deploy-kubernetes:config:
     node-name: pve
-    # Talos bare-metal ISO with QEMU guest agent installed:
-    vm-image: https://factory.talos.dev/image/ce4c980550dd2ab1b17bbf2b08801c7eb59418eafe8f279833297925d67c7515/v1.8.3/metal-amd64.iso
+    # TODO Retrieve image URLs from image factory using Pulimi Talos provider:
+    talos-boot-image: https://factory.talos.dev/image/ce4c980550dd2ab1b17bbf2b08801c7eb59418eafe8f279833297925d67c7515/v1.8.3/metal-amd64.iso
+    talos-image: factory.talos.dev/installer/ce4c980550dd2ab1b17bbf2b08801c7eb59418eafe8f279833297925d67c7515:v1.8.3
     all-vms:
       username: mike
       ssh-public-key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIThrWKIoEj20S3DosaiKBRUGA89qe1xz9hch2+VhSGd mpagel@k8s-dev

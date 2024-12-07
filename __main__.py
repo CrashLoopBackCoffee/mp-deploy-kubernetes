@@ -32,7 +32,7 @@ vm_image = proxmoxve.download.File(
     datastore_id='local',
     node_name=config.node_name,
     overwrite=False,
-    url=str(config.vm_image),
+    url=str(config.talos_boot_image),
     opts=pulumi.ResourceOptions(provider=provider),
 )
 

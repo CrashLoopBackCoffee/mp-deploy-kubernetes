@@ -12,6 +12,7 @@ pulumi-proxmoxve = "^6.15.3"
 pydantic = "^2.10.1"
 jinja2 = "^3.1.4"
 pulumi-command = "^1.0.1"
+pulumiverse-talos = "^0.4.1"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.1.8"
