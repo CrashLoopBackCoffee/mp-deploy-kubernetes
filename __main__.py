@@ -44,7 +44,6 @@ master_name = f'{master_config.name}-{stack_name}'
 # serialize master config and extend with global config attributes:
 master_config_dict = config.all_vms.model_dump() | master_config.model_dump()
 
-
 master_vm = proxmoxve.vm.VirtualMachine(
     master_name,
     name=master_name,
@@ -153,16 +152,6 @@ bootstrap = talos.machine.Bootstrap(
     opts=pulumi.ResourceOptions(depends_on=[configuration_apply]),
 )
 
-health = talos.cluster.get_health_output(
-    client_configuration=talos.cluster.GetHealthClientConfigurationArgs(
-        ca_certificate=secrets.client_configuration.ca_certificate,
-        client_certificate=secrets.client_configuration.client_certificate,
-        client_key=secrets.client_configuration.client_key,
-    ),
-    control_plane_nodes=[master_vm_ipv4],
-    endpoints=[master_vm_ipv4],
-)
-
 kube_config = talos.cluster.get_kubeconfig_output(
     client_configuration=talos.cluster.GetKubeconfigClientConfigurationArgs(
         ca_certificate=secrets.client_configuration.ca_certificate,
@@ -175,3 +164,14 @@ kube_config = talos.cluster.get_kubeconfig_output(
 # # export to kube config with
 # # p stack output --show-secrets k8s-master-0-dev-kube-config > ~/.kube/config
 pulumi.export(f'{cluster_name}-kube-config', kube_config.kubeconfig_raw)
+
+# wait for cluster to be ready:
+talos.cluster.get_health_output(
+    client_configuration=talos.cluster.GetHealthClientConfigurationArgs(
+        ca_certificate=secrets.client_configuration.ca_certificate,
+        client_certificate=secrets.client_configuration.client_certificate,
+        client_key=secrets.client_configuration.client_key,
+    ),
+    control_plane_nodes=[master_vm_ipv4],
+    endpoints=[master_vm_ipv4],
+)
