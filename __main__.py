@@ -1,9 +1,11 @@
 """Kubernetes stack."""
 
 import collections.abc
+import json
 
 import pulumi
 import pulumi_proxmoxve as proxmoxve
+import pulumiverse_talos as talos
 
 from model import Config
 
@@ -41,20 +43,6 @@ master_name = f'{master_config.name}-{stack_name}'
 
 # serialize master config and extend with global config attributes:
 master_config_dict = config.all_vms.model_dump() | master_config.model_dump()
-
-# cloud_config = proxmoxve.storage.File(
-#     'cloud-config',
-#     node_name=config.node_name,
-#     datastore_id='local',
-#     content_type='snippets',
-#     source_raw=proxmoxve.storage.FileSourceRawArgs(
-#         data=jinja2.Template(
-#             pathlib.Path('assets/cloud-init/cloud-config.yaml').read_text()
-#         ).render(master_config_dict),
-#         file_name=f'{master_name}.yaml',
-#     ),
-#     opts=pulumi.ResourceOptions(provider=provider, delete_before_replace=True),
-# )
 
 
 master_vm = proxmoxve.vm.VirtualMachine(
@@ -110,21 +98,80 @@ eth_interface_index = master_vm.network_interface_names.apply(get_eth_interface_
 master_vm_ipv4 = eth_interface_index.apply(lambda index: master_vm.ipv4_addresses[index][0])
 pulumi.export(f'{master_name}-ipv4', master_vm_ipv4)
 
+cluster_endpoint = pulumi.Output.concat('https://', master_vm_ipv4, ':6443')
+pulumi.export(f'cluster-endpoint-{stack_name}', cluster_endpoint)
 
-# master_kube_config_command = command.remote.Command(
-#     f'{master_name}-kube-config',
-#     connection=command.remote.ConnectionArgs(
-#         host=master_vm_ipv4,
-#         user=config.all_vms.username,
-#         private_key=config.all_vms.ssh_private_key,
-#     ),
-#     add_previous_output_in_env=False,
-#     create='microk8s config',
-#     # only log stderr and mark stdout as secret as it contains the private keys to cluster:
-#     logging=command.remote.Logging.STDERR,
-#     opts=pulumi.ResourceOptions(additional_secret_outputs=['stdout']),
-# )
+secrets = talos.machine.Secrets(f'{master_name}-talos-secrets')
+
+cluster_name = f'common-{stack_name}'
+
+configuration = talos.machine.get_configuration_output(
+    cluster_name=cluster_name,
+    machine_type='controlplane',
+    cluster_endpoint=cluster_endpoint,
+    # resolve nested outputs, see https://github.com/pulumiverse/pulumi-talos/issues/93:
+    machine_secrets=talos.machine.MachineSecretsArgs(
+        certs=secrets.machine_secrets.certs,
+        cluster=secrets.machine_secrets.cluster,
+        secrets=secrets.machine_secrets.secrets,
+        trustdinfo=secrets.machine_secrets.trustdinfo,
+    ),
+    config_patches=[
+        json.dumps(
+            {
+                'machine': {
+                    'install': {
+                        'image': config.talos_image,
+                    }
+                }
+            }
+        )
+    ],
+)
+
+configuration_apply = talos.machine.ConfigurationApply(
+    f'{master_name}-talos-configuration-apply',
+    # resolve nested outputs, see https://github.com/pulumiverse/pulumi-talos/issues/93:
+    client_configuration=talos.machine.ClientConfigurationArgs(
+        ca_certificate=secrets.client_configuration.ca_certificate,
+        client_certificate=secrets.client_configuration.client_certificate,
+        client_key=secrets.client_configuration.client_key,
+    ),
+    machine_configuration_input=configuration.machine_configuration,
+    node=master_vm_ipv4,
+)
+
+bootstrap = talos.machine.Bootstrap(
+    f'{master_name}-talos-bootstrap',
+    node=master_vm_ipv4,
+    # resolve nested outputs, see https://github.com/pulumiverse/pulumi-talos/issues/93:
+    client_configuration=talos.machine.ClientConfigurationArgs(
+        ca_certificate=secrets.client_configuration.ca_certificate,
+        client_certificate=secrets.client_configuration.client_certificate,
+        client_key=secrets.client_configuration.client_key,
+    ),
+    opts=pulumi.ResourceOptions(depends_on=[configuration_apply]),
+)
+
+health = talos.cluster.get_health_output(
+    client_configuration=talos.cluster.GetHealthClientConfigurationArgs(
+        ca_certificate=secrets.client_configuration.ca_certificate,
+        client_certificate=secrets.client_configuration.client_certificate,
+        client_key=secrets.client_configuration.client_key,
+    ),
+    control_plane_nodes=[master_vm_ipv4],
+    endpoints=[master_vm_ipv4],
+)
+
+kube_config = talos.cluster.get_kubeconfig_output(
+    client_configuration=talos.cluster.GetKubeconfigClientConfigurationArgs(
+        ca_certificate=secrets.client_configuration.ca_certificate,
+        client_certificate=secrets.client_configuration.client_certificate,
+        client_key=secrets.client_configuration.client_key,
+    ),
+    node=master_vm_ipv4,
+)
 
 # # export to kube config with
 # # p stack output --show-secrets k8s-master-0-dev-kube-config > ~/.kube/config
-# pulumi.export(f'{master_name}-kube-config', master_kube_config_command.stdout)
+pulumi.export(f'{cluster_name}-kube-config', kube_config.kubeconfig_raw)
