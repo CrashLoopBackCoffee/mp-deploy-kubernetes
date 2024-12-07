@@ -24,6 +24,6 @@ class VirtualMachine(ConfigBaseModel):
 
 class Config(ConfigBaseModel):
     node_name: str
-    cloud_image: pydantic.AnyHttpUrl
+    vm_image: pydantic.AnyHttpUrl
     all_vms: VirtualMachineCommon
     control_plane_vms: list[VirtualMachine]
