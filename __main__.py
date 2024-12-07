@@ -2,6 +2,7 @@
 
 import collections.abc
 import json
+import typing as t
 
 import pulumi
 import pulumi_proxmoxve as proxmoxve
@@ -140,23 +141,31 @@ configuration_apply = talos.machine.ConfigurationApply(
     node=master_vm_ipv4,
 )
 
-bootstrap = talos.machine.Bootstrap(
-    f'{master_name}-talos-bootstrap',
-    node=master_vm_ipv4,
-    # resolve nested outputs, see https://github.com/pulumiverse/pulumi-talos/issues/93:
-    client_configuration=talos.machine.ClientConfigurationArgs(
+
+# resolve nested outputs, see https://github.com/pulumiverse/pulumi-talos/issues/93:
+class ClientConfigurationArgs(t.Protocol):
+    def __init__(self, *, ca_certificate, client_certificate, client_key):
+        ...
+
+
+def get_client_configuration_as[T: ClientConfigurationArgs](type_: type[T]) -> T:
+    return type_(
         ca_certificate=secrets.client_configuration.ca_certificate,
         client_certificate=secrets.client_configuration.client_certificate,
         client_key=secrets.client_configuration.client_key,
-    ),
+    )
+
+
+bootstrap = talos.machine.Bootstrap(
+    f'{master_name}-talos-bootstrap',
+    node=master_vm_ipv4,
+    client_configuration=get_client_configuration_as(talos.machine.ClientConfigurationArgs),
     opts=pulumi.ResourceOptions(depends_on=[configuration_apply]),
 )
 
 kube_config = talos.cluster.get_kubeconfig_output(
-    client_configuration=talos.cluster.GetKubeconfigClientConfigurationArgs(
-        ca_certificate=secrets.client_configuration.ca_certificate,
-        client_certificate=secrets.client_configuration.client_certificate,
-        client_key=secrets.client_configuration.client_key,
+    client_configuration=get_client_configuration_as(
+        talos.cluster.GetKubeconfigClientConfigurationArgs
     ),
     node=master_vm_ipv4,
 )
@@ -167,11 +176,9 @@ pulumi.export(f'{cluster_name}-kube-config', kube_config.kubeconfig_raw)
 
 # wait for cluster to be ready:
 talos.cluster.get_health_output(
-    client_configuration=talos.cluster.GetHealthClientConfigurationArgs(
-        ca_certificate=secrets.client_configuration.ca_certificate,
-        client_certificate=secrets.client_configuration.client_certificate,
-        client_key=secrets.client_configuration.client_key,
+    client_configuration=get_client_configuration_as(
+        talos.cluster.GetHealthClientConfigurationArgs
     ),
-    control_plane_nodes=[master_vm_ipv4],
-    endpoints=[master_vm_ipv4],
+    control_plane_nodes=[master_vm_ipv4],  # pyright: ignore[reportArgumentType]
+    endpoints=[master_vm_ipv4],  # pyright: ignore[reportArgumentType]
 )
