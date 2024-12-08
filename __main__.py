@@ -15,30 +15,29 @@ config = ConfigModel.model_validate(pulumi_config.require_object('config'))
 pve_provider = get_pve_provider()
 
 vm_boot_image = download_iso(
-    name='vm-boot-image',
+    name='talos-boot-image',
     node_name=config.node_name,
     url=str(config.talos_boot_image),
 )
 
 stack_name = pulumi.get_stack()
-master_name = f'k8s-master-0-{stack_name}'
+cp_node_name = f'controlplane-0-{stack_name}'
 
-master_vm = create_vm_from_cdrom(
-    name=master_name,
+cp_node_vm = create_vm_from_cdrom(
+    name=cp_node_name,
     config=config.control_plane_vms[0],
     node_name=config.node_name,
     boot_image=vm_boot_image,
 )
 
-master_vm_ipv4 = get_vm_ipv4(master_vm)
-pulumi.export(f'{master_name}-ipv4', master_vm_ipv4)
+cp_node_ipv4 = get_vm_ipv4(cp_node_vm)
+pulumi.export(f'{cp_node_name}-ipv4', cp_node_ipv4)
 
-cluster_endpoint = pulumi.Output.concat('https://', master_vm_ipv4, ':6443')
-pulumi.export(f'cluster-endpoint-{stack_name}', cluster_endpoint)
-
-secrets = talos.machine.Secrets(f'{master_name}-talos-secrets')
-
+cluster_endpoint = pulumi.Output.concat('https://', cp_node_ipv4, ':6443')
 cluster_name = f'common-{stack_name}'
+pulumi.export(f'{cluster_name}-endpoint', cluster_endpoint)
+
+secrets = talos.machine.Secrets(f'{cp_node_name}-talos-secrets')
 
 configuration = talos.machine.get_configuration_output(
     cluster_name=cluster_name,
@@ -64,18 +63,6 @@ configuration = talos.machine.get_configuration_output(
     ],
 )
 
-configuration_apply = talos.machine.ConfigurationApply(
-    f'{master_name}-talos-configuration-apply',
-    # resolve nested outputs, see https://github.com/pulumiverse/pulumi-talos/issues/93:
-    client_configuration=talos.machine.ClientConfigurationArgs(
-        ca_certificate=secrets.client_configuration.ca_certificate,
-        client_certificate=secrets.client_configuration.client_certificate,
-        client_key=secrets.client_configuration.client_key,
-    ),
-    machine_configuration_input=configuration.machine_configuration,
-    node=master_vm_ipv4,
-)
-
 
 # resolve nested outputs, see https://github.com/pulumiverse/pulumi-talos/issues/93:
 class ClientConfigurationArgs(t.Protocol):
@@ -91,9 +78,17 @@ def get_client_configuration_as[T: ClientConfigurationArgs](type_: type[T]) -> T
     )
 
 
+configuration_apply = talos.machine.ConfigurationApply(
+    f'{cp_node_name}-talos-configuration-apply',
+    # resolve nested outputs, see https://github.com/pulumiverse/pulumi-talos/issues/93:
+    client_configuration=get_client_configuration_as(talos.machine.ClientConfigurationArgs),
+    machine_configuration_input=configuration.machine_configuration,
+    node=cp_node_ipv4,
+)
+
 bootstrap = talos.machine.Bootstrap(
-    f'{master_name}-talos-bootstrap',
-    node=master_vm_ipv4,
+    f'{cp_node_name}-talos-bootstrap',
+    node=cp_node_ipv4,
     client_configuration=get_client_configuration_as(talos.machine.ClientConfigurationArgs),
     opts=pulumi.ResourceOptions(depends_on=[configuration_apply]),
 )
@@ -102,15 +97,15 @@ kube_config = talos.cluster.get_kubeconfig_output(
     client_configuration=get_client_configuration_as(
         talos.cluster.GetKubeconfigClientConfigurationArgs
     ),
-    node=master_vm_ipv4,
+    node=cp_node_ipv4,
 )
 
 # # export to kube config with
-# # p stack output --show-secrets k8s-master-0-dev-kube-config > ~/.kube/config
+# # p stack output --show-secrets k8s-cp-0-dev-kube-config > ~/.kube/config
 pulumi.export(f'{cluster_name}-kube-config', kube_config.kubeconfig_raw)
 
 # wait for cluster to be fully initialized:
-master_vm_ipv4.apply(
+cp_node_ipv4.apply(
     lambda ipv4: talos.cluster.get_health_output(
         client_configuration=get_client_configuration_as(
             talos.cluster.GetHealthClientConfigurationArgs

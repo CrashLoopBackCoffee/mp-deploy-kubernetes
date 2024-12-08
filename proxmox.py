@@ -52,7 +52,7 @@ def create_vm_from_cdrom(
         vm_id=config.vmid,
         tags=[stack_name],
         node_name=node_name,
-        description='Kubernetes Master, maintained with Pulumi. Based on Talos Linux.',
+        description='Kubernetes node, maintained with Pulumi. Based on Talos Linux.',
         cpu=proxmoxve.vm.VirtualMachineCpuArgs(cores=2, type='host'),
         memory=proxmoxve.vm.VirtualMachineMemoryArgs(
             # unlike what the names suggest, `floating` is the minimum memory and `dediacted` the
@@ -79,6 +79,7 @@ def create_vm_from_cdrom(
             provider=get_pve_provider(),
             # disks and cdrom has contant diffs and lead to update errors, possibly a bug in provider:
             ignore_changes=['disks', 'cdrom'],
+            delete_before_replace=True,
         ),
     )
 
