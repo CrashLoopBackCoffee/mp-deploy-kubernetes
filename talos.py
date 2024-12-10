@@ -3,6 +3,7 @@
 The output related typing in this module is a little weird, mainly to simplify use and work around
 https://github.com/pulumiverse/pulumi-talos/issues/93.
 """
+import collections.abc as c
 import json
 import typing as t
 
@@ -14,11 +15,31 @@ class Configurations(t.NamedTuple):
     client: pulumi.Output[talos.machine.outputs.ClientConfiguration]
     controlplane: pulumi.Output[talos.machine.GetConfigurationResult]
     worker: pulumi.Output[talos.machine.GetConfigurationResult]
+    talos: pulumi.Output[str]
+
+
+# resolve nested outputs, see https://github.com/pulumiverse/pulumi-talos/issues/93:
+class ClientConfigurationArgs(t.Protocol):
+    def __init__(self, *, ca_certificate, client_certificate, client_key):
+        ...
+
+
+def _get_client_configuration_as[T: ClientConfigurationArgs](
+    client_configuration: pulumi.Output[talos.machine.outputs.ClientConfiguration],
+    type_: type[T],
+) -> T:
+    return type_(
+        ca_certificate=client_configuration.ca_certificate,
+        client_certificate=client_configuration.client_certificate,
+        client_key=client_configuration.client_key,
+    )
 
 
 def get_configurations(
     cluster_name: str,
-    cluster_endpoint: pulumi.Input[str],
+    cluster_endpoint: pulumi.Output[str],
+    endpoints: pulumi.Output[c.Sequence[str]],
+    nodes: pulumi.Output[c.Sequence[str]],
     image: str,
 ) -> Configurations:
     secrets = talos.machine.Secrets(f'{cluster_name}-talos-secrets')
@@ -50,27 +71,20 @@ def get_configurations(
         for machine_type in ('controlplane', 'worker')
     )
 
+    client_configuration_detailed = talos.client.get_configuration_output(
+        client_configuration=_get_client_configuration_as(
+            secrets.client_configuration, talos.client.GetConfigurationClientConfigurationArgs
+        ),
+        cluster_name=cluster_name,
+        endpoints=endpoints,
+        nodes=nodes,
+    )
+
     return Configurations(
         client=secrets.client_configuration,
         controlplane=cp_node_config,
         worker=wrk_node_config,
-    )
-
-
-# resolve nested outputs, see https://github.com/pulumiverse/pulumi-talos/issues/93:
-class ClientConfigurationArgs(t.Protocol):
-    def __init__(self, *, ca_certificate, client_certificate, client_key):
-        ...
-
-
-def _get_client_configuration_as[T: ClientConfigurationArgs](
-    client_configuration: pulumi.Output[talos.machine.outputs.ClientConfiguration],
-    type_: type[T],
-) -> T:
-    return type_(
-        ca_certificate=client_configuration.ca_certificate,
-        client_certificate=client_configuration.client_certificate,
-        client_key=client_configuration.client_key,
+        talos=client_configuration_detailed.talos_config,
     )
 
 

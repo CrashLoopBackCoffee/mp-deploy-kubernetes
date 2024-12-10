@@ -33,11 +33,20 @@ cluster_endpoint = pulumi.Output.concat('https://', cp_node_ipv4, ':6443')
 cluster_name = f'common-{stack_name}'
 pulumi.export(f'{cluster_name}-endpoint', cluster_endpoint)
 
+# right now we have one endpoint and that is also the single node:
+nodes = cp_node_ipv4.apply(lambda ipv4: [ipv4])
+
 talos_configurations = get_configurations(
     cluster_name=cluster_name,
     cluster_endpoint=cluster_endpoint,
+    endpoints=nodes,
+    nodes=nodes,
     image=config.talos_image,
 )
+
+# export client config with
+# p stack output --show-secrets common-dev-talos-client-configuration > ~/.talos/config
+pulumi.export(f'{cluster_name}-talos-client-configuration', talos_configurations.talos)
 
 apply = apply_machine_configuration(
     name=f'{cp_node_name}-talos-configuration-apply',
@@ -54,6 +63,6 @@ kube_config = bootstrap_cluster(
     wait=True,
 )
 
-# # export to kube config with
-# # p stack output --show-secrets common-dev-kube-config > ~/.kube/config
+# export to kube config with
+# p stack output --show-secrets common-dev-kube-config > ~/.kube/config
 pulumi.export(f'{cluster_name}-kube-config', kube_config.kubeconfig_raw)
