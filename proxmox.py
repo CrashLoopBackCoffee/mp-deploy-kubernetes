@@ -25,7 +25,7 @@ def get_pve_provider() -> proxmoxve.Provider:
     )
 
 
-def download_iso(*, name: str, url: str, node_name: str) -> proxmoxve.download.File:
+def download_iso(*, name: str, url: pulumi.Input[str], node_name: str) -> proxmoxve.download.File:
     return proxmoxve.download.File(
         name,
         content_type='iso',
@@ -33,7 +33,7 @@ def download_iso(*, name: str, url: str, node_name: str) -> proxmoxve.download.F
         node_name=node_name,
         overwrite=False,
         url=url,
-        opts=pulumi.ResourceOptions(provider=get_pve_provider()),
+        opts=pulumi.ResourceOptions(provider=get_pve_provider(), delete_before_replace=True),
     )
 
 

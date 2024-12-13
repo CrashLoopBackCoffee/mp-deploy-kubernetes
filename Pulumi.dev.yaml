@@ -1,8 +1,10 @@
 config:
   deploy-kubernetes:config:
     node-name: pve
-    # TODO Retrieve image URLs from image factory using Pulimi Talos provider:
-    talos-boot-image: https://factory.talos.dev/image/ce4c980550dd2ab1b17bbf2b08801c7eb59418eafe8f279833297925d67c7515/v1.8.3/metal-amd64.iso
-    talos-image: factory.talos.dev/installer/ce4c980550dd2ab1b17bbf2b08801c7eb59418eafe8f279833297925d67c7515:v1.8.3
+    talos-schematic:
+      customization:
+        systemExtensions:
+          officialExtensions:
+            - siderolabs/qemu-guest-agent
     control-plane-vms:
       - vmid: 1100

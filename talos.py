@@ -4,11 +4,33 @@ The output related typing in this module is a little weird, mainly to simplify u
 https://github.com/pulumiverse/pulumi-talos/issues/93.
 """
 import collections.abc as c
-import json
 import typing as t
 
 import pulumi
 import pulumiverse_talos as talos
+
+SCHEMATIC = """
+customization:
+    systemExtensions:
+        officialExtensions:
+            - siderolabs/qemu-guest-agent
+"""
+"""Schematic for images needed on Proxmox VM."""
+
+
+def get_images() -> tuple[pulumi.Output[str], pulumi.Output[str]]:
+    """Retrieve image URLs for needed configuration (hardcoded for now)."""
+
+    schematic = talos.imagefactory.Schematic('talos-schematic', schematic=SCHEMATIC)
+
+    urls = talos.imagefactory.get_urls_output(
+        platform='metal',
+        architecture='amd64',
+        talos_version='v1.8.3',
+        schematic_id=schematic.id,
+    ).urls
+
+    return urls.iso, urls.installer
 
 
 class Configurations(t.NamedTuple):
@@ -40,7 +62,7 @@ def get_configurations(
     cluster_endpoint: pulumi.Output[str],
     endpoints: pulumi.Output[c.Sequence[str]],
     nodes: pulumi.Output[c.Sequence[str]],
-    image: str,
+    image: pulumi.Input[str],
 ) -> Configurations:
     secrets = talos.machine.Secrets(f'{cluster_name}-talos-secrets')
 
@@ -56,17 +78,15 @@ def get_configurations(
                 secrets=secrets.machine_secrets.secrets,
                 trustdinfo=secrets.machine_secrets.trustdinfo,
             ),
-            config_patches=[
-                json.dumps(
-                    {
-                        'machine': {
-                            'install': {
-                                'image': image,
-                            }
+            config_patches=pulumi.Output.json_dumps(
+                {
+                    'machine': {
+                        'install': {
+                            'image': image,
                         }
                     }
-                )
-            ],
+                }
+            ).apply(lambda o: [o]),
         )
         for machine_type in ('controlplane', 'worker')
     )

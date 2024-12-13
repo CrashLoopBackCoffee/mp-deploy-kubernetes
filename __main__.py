@@ -3,7 +3,9 @@ import pulumi
 
 from model import ConfigModel
 from proxmox import create_vm_from_cdrom, download_iso, get_pve_provider, get_vm_ipv4
-from talos import apply_machine_configuration, bootstrap_cluster, get_configurations
+from talos import apply_machine_configuration, bootstrap_cluster, get_configurations, get_images
+
+iso_image_url, installer_image_url = get_images()
 
 pulumi_config = pulumi.Config()
 config = ConfigModel.model_validate(pulumi_config.require_object('config'))
@@ -13,7 +15,7 @@ pve_provider = get_pve_provider()
 vm_boot_image = download_iso(
     name='talos-boot-image',
     node_name=config.node_name,
-    url=str(config.talos_boot_image),
+    url=iso_image_url,
 )
 
 stack_name = pulumi.get_stack()
@@ -41,7 +43,7 @@ talos_configurations = get_configurations(
     cluster_endpoint=cluster_endpoint,
     endpoints=nodes,
     nodes=nodes,
-    image=config.talos_image,
+    image=installer_image_url,
 )
 
 pulumi.export('talos-client-configuration', talos_configurations.talos)
