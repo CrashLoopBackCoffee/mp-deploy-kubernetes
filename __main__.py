@@ -44,7 +44,7 @@ talos_configurations = get_configurations(
     image=config.talos_image,
 )
 
-pulumi.export(f'{cluster_name}-talos-client-configuration', talos_configurations.talos)
+pulumi.export('talos-client-configuration', talos_configurations.talos)
 
 apply = apply_machine_configuration(
     name=f'{cp_node_name}-talos-configuration-apply',
@@ -61,4 +61,4 @@ kube_config = bootstrap_cluster(
     wait=True,
 )
 
-pulumi.export(f'{cluster_name}-kube-config', kube_config.kubeconfig_raw)
+pulumi.export('kube-config', kube_config.kubeconfig_raw)
