@@ -1,10 +1,5 @@
 config:
   deploy-kubernetes:config:
     node-name: pve
-    talos-schematic:
-      customization:
-        systemExtensions:
-          officialExtensions:
-            - siderolabs/qemu-guest-agent
     control-plane-vms:
       - vmid: 1100
