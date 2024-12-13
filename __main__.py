@@ -1,5 +1,6 @@
 """Kubernetes stack."""
 import pulumi
+import pulumi_kubernetes as k8s
 
 from model import ConfigModel
 from proxmox import create_vm_from_cdrom, download_iso, get_pve_provider, get_vm_ipv4
@@ -19,10 +20,10 @@ vm_boot_image = download_iso(
 )
 
 stack_name = pulumi.get_stack()
-cp_node_name = f'controlplane-0-{stack_name}'
+cp_node_name = f'k8s-cp0-{stack_name}'
 
 cp_node_vm = create_vm_from_cdrom(
-    name=cp_node_name,
+    name=f'{cp_node_name}-vm',
     config=config.control_plane_vms[0],
     node_name=config.node_name,
     boot_image=vm_boot_image,
@@ -49,8 +50,8 @@ talos_configurations = get_configurations(
 pulumi.export('talos-client-configuration', talos_configurations.talos)
 
 apply = apply_machine_configuration(
-    name=f'{cp_node_name}-talos-configuration-apply',
-    node=cp_node_ipv4,
+    node_name=cp_node_name,
+    node_ipv4=cp_node_ipv4,
     client_configuration=talos_configurations.client,
     machine_configuration=talos_configurations.controlplane.machine_configuration,
 )
@@ -64,3 +65,30 @@ kube_config = bootstrap_cluster(
 )
 
 pulumi.export('kube-config', kube_config.kubeconfig_raw)
+
+# untaint the one controlplane node to allow workloads for now:
+k8s_provider = k8s.Provider(
+    'k8s-provider',
+    enable_server_side_apply=True,
+    kubeconfig=kube_config.kubeconfig_raw,
+)
+
+k8s.core.v1.NodePatch(
+    f'{cp_node_name}-untaint-for-workload',
+    metadata=k8s.meta.v1.ObjectMetaPatchArgs(
+        name=cp_node_name,
+        annotations={
+            'pulumi.com/patchForce': 'true',
+        },
+    ),
+    spec=k8s.core.v1.NodeSpecPatchArgs(
+        # passing an empty list does not lead to an update, so add a dummy taint:
+        taints=[
+            k8s.core.v1.TaintPatchArgs(
+                key='mpagel.de/dummy-taint',
+                effect='NoSchedule',
+            ),
+        ]
+    ),
+    opts=pulumi.ResourceOptions(provider=k8s_provider),
+)

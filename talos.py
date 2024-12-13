@@ -4,6 +4,7 @@ The output related typing in this module is a little weird, mainly to simplify u
 https://github.com/pulumiverse/pulumi-talos/issues/93.
 """
 import collections.abc as c
+import json
 import typing as t
 
 import pulumi
@@ -110,19 +111,30 @@ def get_configurations(
 
 def apply_machine_configuration(
     *,
-    name: str,
-    node: pulumi.Input[str],
+    node_name: str,
+    node_ipv4: pulumi.Input[str],
     client_configuration: pulumi.Output[talos.machine.outputs.ClientConfiguration],
     machine_configuration: pulumi.Input[str],
 ) -> talos.machine.ConfigurationApply:
     return talos.machine.ConfigurationApply(
-        name,
+        f'{node_name}-talos-configuration-apply',
         client_configuration=_get_client_configuration_as(
             client_configuration,
             talos.machine.ClientConfigurationArgs,
         ),
         machine_configuration_input=machine_configuration,
-        node=node,
+        config_patches=[
+            json.dumps(
+                {
+                    'machine': {
+                        'network': {
+                            'hostname': node_name,
+                        }
+                    }
+                }
+            )
+        ],
+        node=node_ipv4,
     )
 
 
@@ -154,15 +166,18 @@ def bootstrap_cluster(
 
     if wait:
         # wait for cluster to be fully initialized:
-        pulumi.Output.from_input(node).apply(
-            lambda ipv4: talos.cluster.get_health_output(
-                client_configuration=_get_client_configuration_as(
-                    client_configuration,
-                    talos.cluster.GetHealthClientConfigurationArgs,
-                ),
-                control_plane_nodes=[ipv4],
-                endpoints=[ipv4],
-            )
+        health = talos.cluster.get_health_output(
+            client_configuration=_get_client_configuration_as(
+                client_configuration,
+                talos.cluster.GetHealthClientConfigurationArgs,
+            ),
+            control_plane_nodes=pulumi.Output.all(node),
+            endpoints=pulumi.Output.all(node),
+        )
+
+        # make output kube config depend on health to be done:
+        kube_config = pulumi.Output.all(kube_config, health).apply(
+            lambda health_and_config: health_and_config[0]
         )
 
     return kube_config
