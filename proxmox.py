@@ -66,9 +66,10 @@ def create_vm_from_cdrom(
         ),
         disks=[
             proxmoxve.vm.VirtualMachineDiskArgs(
-                interface='scsi0',
+                interface='virtio0',
                 size=16,
                 discard='on',
+                iothread=True,
                 datastore_id='local-lvm',
                 file_format='raw',
             ),

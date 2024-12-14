@@ -1,8 +1,6 @@
 """Kubernetes stack."""
 import pulumi
-import pulumi_kubernetes as k8s
 
-from kubernetes import remove_all_node_taints
 from model import ConfigModel
 from proxmox import create_vm_from_cdrom, download_iso, get_pve_provider, get_vm_ipv4
 from talos import apply_machine_configuration, bootstrap_cluster, get_configurations, get_images

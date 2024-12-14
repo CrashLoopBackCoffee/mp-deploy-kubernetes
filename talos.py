@@ -83,6 +83,8 @@ def get_configurations(
                 {
                     'machine': {
                         'install': {
+                            # needed if using virtio:
+                            'disk': '/dev/vda',
                             'image': image,
                         }
                     }
