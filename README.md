@@ -8,6 +8,6 @@ access the cluster:
 - `kube-config` - Kubeconfig to be used with `kubectl`.
 
 ```shell
-p stack output --show-secrets talos-client-configuration > ~/.talos/config
+p stack output --show-secrets talos-client-config > ~/.talos/config
 p stack output --show-secrets kube-config > ~/.kube/config
 ```
