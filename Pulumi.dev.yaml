@@ -1,5 +1,9 @@
 config:
   deploy-kubernetes:config:
     node-name: pve
-    control-plane-vms:
-      - vmid: 1100
+    controlplane-nodes:
+      vmid-start: 1100
+      number-of-nodes: 1
+    worker-nodes:
+      vmid-start: 1200
+      number-of-nodes: 1

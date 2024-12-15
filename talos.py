@@ -143,14 +143,16 @@ def apply_machine_configuration(
 def bootstrap_cluster(
     *,
     name: str,
-    node: pulumi.Input[str],
+    endpoint_node: pulumi.Input[str],
+    control_plane_nodes: c.Iterable[pulumi.Input[str]],
+    worker_nodes: c.Iterable[pulumi.Input[str]],
     client_configuration: pulumi.Output[talos.machine.outputs.ClientConfiguration],
     depends_on: list | None = None,
     wait=False,
 ) -> pulumi.Output[talos.cluster.GetKubeconfigResult]:
     talos.machine.Bootstrap(
         name,
-        node=node,
+        node=endpoint_node,
         client_configuration=_get_client_configuration_as(
             client_configuration,
             talos.machine.ClientConfigurationArgs,
@@ -163,7 +165,7 @@ def bootstrap_cluster(
             client_configuration,
             talos.cluster.GetKubeconfigClientConfigurationArgs,
         ),
-        node=node,
+        node=endpoint_node,
     )
 
     if wait:
@@ -173,8 +175,9 @@ def bootstrap_cluster(
                 client_configuration,
                 talos.cluster.GetHealthClientConfigurationArgs,
             ),
-            control_plane_nodes=pulumi.Output.all(node),
-            endpoints=pulumi.Output.all(node),
+            control_plane_nodes=pulumi.Output.all(*control_plane_nodes),
+            endpoints=pulumi.Output.all(*control_plane_nodes),
+            worker_nodes=pulumi.Output.all(*worker_nodes),
         )
 
         # make output kube config depend on health to be done:

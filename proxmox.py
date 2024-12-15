@@ -5,7 +5,7 @@ import functools
 import pulumi
 import pulumi_proxmoxve as proxmoxve
 
-from model import VirtualMachineModel
+from model import VirtualMachineRange
 
 
 @functools.lru_cache
@@ -40,7 +40,7 @@ def download_iso(*, name: str, url: pulumi.Input[str], node_name: str) -> proxmo
 def create_vm_from_cdrom(
     *,
     name: str,
-    config: VirtualMachineModel,
+    vmid: int,
     node_name: str,
     boot_image: proxmoxve.download.File,
 ) -> proxmoxve.vm.VirtualMachine:
@@ -49,7 +49,7 @@ def create_vm_from_cdrom(
     return proxmoxve.vm.VirtualMachine(
         name,
         name=name,
-        vm_id=config.vmid,
+        vm_id=vmid,
         tags=[stack_name],
         node_name=node_name,
         description='Kubernetes node, maintained with Pulumi. Based on Talos Linux.',
@@ -78,11 +78,41 @@ def create_vm_from_cdrom(
         agent=proxmoxve.vm.VirtualMachineAgentArgs(enabled=True),
         opts=pulumi.ResourceOptions(
             provider=get_pve_provider(),
-            # disks and cdrom has contant diffs and lead to update errors, possibly a bug in provider:
-            ignore_changes=['disks', 'cdrom'],
+            # the disk is written to, ignore further updates:
+            ignore_changes=['disks'],
             delete_before_replace=True,
         ),
     )
+
+
+def create_vms_from_cdrom(
+    pve_node_name: str,
+    range_: VirtualMachineRange,
+    vm_name: str,
+    vm_boot_image: proxmoxve.download.File,
+) -> dict[str, pulumi.Output[str]]:
+    stack_name = pulumi.get_stack()
+    address_by_name: dict[str, pulumi.Output[str]] = {}
+
+    for index, vmid in enumerate(
+        range(
+            range_.vmid_start,
+            range_.vmid_start + range_.number_of_nodes,
+        )
+    ):
+        cp_node_name = f'k8s-{vm_name}-{index}'
+
+        cp_node_vm = create_vm_from_cdrom(
+            name=f'{cp_node_name}-vm-{stack_name}',
+            vmid=vmid,
+            node_name=pve_node_name,
+            boot_image=vm_boot_image,
+        )
+
+        cp_node_ipv4 = get_vm_ipv4(cp_node_vm)
+        address_by_name[cp_node_name] = cp_node_ipv4
+
+    return address_by_name
 
 
 class NetworkInterfaceNotFoundError(Exception):
