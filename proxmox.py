@@ -43,8 +43,43 @@ def create_vm_from_cdrom(
     vmid: int,
     node_name: str,
     boot_image: proxmoxve.download.File,
+    controlplane: bool,
 ) -> proxmoxve.vm.VirtualMachine:
     stack_name = pulumi.get_stack()
+
+    if controlplane:
+        disks = [
+            # boot disk:
+            proxmoxve.vm.VirtualMachineDiskArgs(
+                interface='virtio0',
+                size=16,
+                discard='on',
+                iothread=True,
+                datastore_id='local-lvm',
+                file_format='raw',
+            ),
+        ]
+    else:
+        disks = [
+            # boot disk:
+            proxmoxve.vm.VirtualMachineDiskArgs(
+                interface='virtio0',
+                size=12,
+                discard='on',
+                iothread=True,
+                datastore_id='local-lvm',
+                file_format='raw',
+            ),
+            # later used as PV for LVM-backed persistent volume:
+            proxmoxve.vm.VirtualMachineDiskArgs(
+                interface='virtio1',
+                size=256,
+                discard='on',
+                iothread=True,
+                datastore_id='local-lvm',
+                file_format='raw',
+            ),
+        ]
 
     return proxmoxve.vm.VirtualMachine(
         name,
@@ -64,16 +99,7 @@ def create_vm_from_cdrom(
             enabled=True,
             file_id=boot_image.id,
         ),
-        disks=[
-            proxmoxve.vm.VirtualMachineDiskArgs(
-                interface='virtio0',
-                size=16,
-                discard='on',
-                iothread=True,
-                datastore_id='local-lvm',
-                file_format='raw',
-            ),
-        ],
+        disks=disks,
         network_devices=[proxmoxve.vm.VirtualMachineNetworkDeviceArgs(bridge='vmbr0')],
         agent=proxmoxve.vm.VirtualMachineAgentArgs(enabled=True),
         opts=pulumi.ResourceOptions(
@@ -90,6 +116,8 @@ def create_vms_from_cdrom(
     range_: VirtualMachineRange,
     vm_name: str,
     vm_boot_image: proxmoxve.download.File,
+    *,
+    controlplane: bool,
 ) -> dict[str, pulumi.Output[str]]:
     stack_name = pulumi.get_stack()
     address_by_name: dict[str, pulumi.Output[str]] = {}
@@ -107,6 +135,7 @@ def create_vms_from_cdrom(
             vmid=vmid,
             node_name=pve_node_name,
             boot_image=vm_boot_image,
+            controlplane=controlplane,
         )
 
         cp_node_ipv4 = get_vm_ipv4(cp_node_vm)

@@ -26,12 +26,14 @@ controlplane_address_by_name = create_vms_from_cdrom(
     range_=config.controlplane_nodes,
     vm_name='cp',
     vm_boot_image=vm_boot_image,
+    controlplane=True,
 )
 worker_address_by_name = create_vms_from_cdrom(
     pve_node_name=config.node_name,
     range_=config.worker_nodes,
     vm_name='wk',
     vm_boot_image=vm_boot_image,
+    controlplane=False,
 )
 
 assert controlplane_address_by_name and worker_address_by_name

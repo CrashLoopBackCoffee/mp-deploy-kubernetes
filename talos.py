@@ -18,6 +18,12 @@ customization:
 """
 """Schematic for images needed on Proxmox VM."""
 
+DATA_MOUNTPOINT = '/var/mnt/data'
+"""Directory, where data disk is mounted on node."""
+
+LABEL_DATA_VOLUME = 'mpagel.de/data-volume'
+"""Label used to mark node as having a data volume."""
+
 
 def get_images() -> tuple[pulumi.Output[str], pulumi.Output[str]]:
     """Retrieve image URLs for needed configuration (hardcoded for now)."""
@@ -67,31 +73,79 @@ def get_configurations(
 ) -> Configurations:
     secrets = talos.machine.Secrets(f'{cluster_name}-talos-secrets')
 
-    cp_node_config, wrk_node_config = (
-        talos.machine.get_configuration_output(
-            cluster_name=cluster_name,
-            machine_type=machine_type,
-            cluster_endpoint=cluster_endpoint,
-            # resolve nested outputs, see https://github.com/pulumiverse/pulumi-talos/issues/93:
-            machine_secrets=talos.machine.MachineSecretsArgs(
-                certs=secrets.machine_secrets.certs,
-                cluster=secrets.machine_secrets.cluster,
-                secrets=secrets.machine_secrets.secrets,
-                trustdinfo=secrets.machine_secrets.trustdinfo,
-            ),
-            config_patches=pulumi.Output.json_dumps(
-                {
-                    'machine': {
-                        'install': {
-                            # needed if using virtio:
-                            'disk': '/dev/vda',
-                            'image': image,
-                        }
+    cp_node_config = talos.machine.get_configuration_output(
+        cluster_name=cluster_name,
+        machine_type='controlplane',
+        cluster_endpoint=cluster_endpoint,
+        # resolve nested outputs, see https://github.com/pulumiverse/pulumi-talos/issues/93:
+        machine_secrets=talos.machine.MachineSecretsArgs(
+            certs=secrets.machine_secrets.certs,
+            cluster=secrets.machine_secrets.cluster,
+            secrets=secrets.machine_secrets.secrets,
+            trustdinfo=secrets.machine_secrets.trustdinfo,
+        ),
+        config_patches=pulumi.Output.json_dumps(
+            {
+                'machine': {
+                    'install': {
+                        'image': image,
+                        'disk': '/dev/vda',
                     }
                 }
-            ).apply(lambda o: [o]),
-        )
-        for machine_type in ('controlplane', 'worker')
+            }
+        ).apply(lambda o: [o]),
+    )
+
+    wrk_node_config = talos.machine.get_configuration_output(
+        cluster_name=cluster_name,
+        machine_type='worker',
+        cluster_endpoint=cluster_endpoint,
+        # resolve nested outputs, see https://github.com/pulumiverse/pulumi-talos/issues/93:
+        machine_secrets=talos.machine.MachineSecretsArgs(
+            certs=secrets.machine_secrets.certs,
+            cluster=secrets.machine_secrets.cluster,
+            secrets=secrets.machine_secrets.secrets,
+            trustdinfo=secrets.machine_secrets.trustdinfo,
+        ),
+        config_patches=pulumi.Output.json_dumps(
+            {
+                'machine': {
+                    'install': {
+                        'disk': '/dev/vda',
+                        'image': image,
+                    },
+                    'disks': [
+                        # mount second disk as data volume on Talos node:
+                        {
+                            'device': '/dev/vdb',
+                            'partitions': [
+                                {
+                                    'mountpoint': DATA_MOUNTPOINT,
+                                },
+                            ],
+                        }
+                    ],
+                    'kubelet': {
+                        'extraMounts': [
+                            # mount node directory into kubelet for later PV definition:
+                            {
+                                'source': DATA_MOUNTPOINT,
+                                'destination': DATA_MOUNTPOINT,
+                                'type': 'bind',
+                                'options': [
+                                    'bind',
+                                    'rshared',
+                                    'rw',
+                                ],
+                            }
+                        ],
+                    },
+                    'nodeLabels': {
+                        LABEL_DATA_VOLUME: 'true',
+                    },
+                }
+            }
+        ).apply(lambda o: [o]),
     )
 
     client_configuration_detailed = talos.client.get_configuration_output(
