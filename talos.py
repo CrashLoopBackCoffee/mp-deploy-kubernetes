@@ -90,9 +90,24 @@ def get_configurations(
                     'install': {
                         'image': image,
                         'disk': '/dev/vda',
-                    }
-                }
-            }
+                    },
+                },
+                # prevent warnings about pod security by setting wanr level to what is enforced:
+                'cluster': {
+                    'apiServer': {
+                        'admissionControl': [
+                            {
+                                'name': 'PodSecurity',
+                                'configuration': {
+                                    'defaults': {
+                                        'warn': 'baseline',
+                                    },
+                                },
+                            },
+                        ],
+                    },
+                },
+            },
         ).apply(lambda o: [o]),
     )
 
