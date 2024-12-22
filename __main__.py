@@ -44,7 +44,7 @@ pulumi.export('worker-ipv4-addresses', worker_address_by_name)
 
 _, cluster_endpoint_address = next(iter(controlplane_address_by_name.items()))
 cluster_endpoint = pulumi.Output.concat('https://', cluster_endpoint_address, ':6443')
-cluster_name = 'common'
+cluster_name = stack_name
 pulumi.export(f'{cluster_name}-endpoint', cluster_endpoint)
 
 talos_configurations = get_configurations(

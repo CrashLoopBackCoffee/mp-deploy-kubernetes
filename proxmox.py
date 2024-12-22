@@ -33,6 +33,7 @@ def download_iso(*, name: str, url: pulumi.Input[str], node_name: str) -> proxmo
         node_name=node_name,
         overwrite=False,
         url=url,
+        file_name=f'{name}-{pulumi.get_stack()}.iso',
         opts=pulumi.ResourceOptions(provider=get_pve_provider(), delete_before_replace=True),
     )
 
