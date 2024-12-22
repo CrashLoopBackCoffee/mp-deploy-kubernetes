@@ -1,5 +1,6 @@
 """Kubernetes stack."""
 import pulumi
+import pulumi_kubernetes as k8s
 
 from model import ConfigModel
 from proxmox import create_vms_from_cdrom, download_iso, get_pve_provider
@@ -88,7 +89,21 @@ kube_config = bootstrap_cluster(
     control_plane_nodes=controlplane_address_by_name.values(),
     worker_nodes=worker_address_by_name.values(),
     depends_on=applied,
-    wait=False,
+    wait=True,
 )
 
 pulumi.export('kube-config', kube_config.kubeconfig_raw)
+
+k8s_provider = k8s.Provider(
+    'k8s-provider',
+    enable_server_side_apply=True,
+    kubeconfig=kube_config.kubeconfig_raw,
+)
+
+# do the kustomize run locally and only process result here to work around
+# https://github.com/pulumi/pulumi-kubernetes/issues/3389:
+k8s.yaml.v2.ConfigFile(
+    'local-path-provisioner',
+    file='./kustomize/local-path-provisioner.yaml',
+    opts=pulumi.ResourceOptions(provider=k8s_provider),
+)
