@@ -15,12 +15,12 @@ runcmd:
   - apt-get update -y
   - apt-get upgrade -y
   - DEBIAN_FRONTEND=noninteractive apt-get install -y
-    vim
-    net-tools
     apt-transport-https
     ca-certificates
     curl
     gpg
+    net-tools
+    vim
 
   # microk8s installation:
   - snap install microk8s --classic

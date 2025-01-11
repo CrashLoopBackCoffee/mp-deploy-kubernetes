@@ -46,12 +46,12 @@ cloud_config = proxmoxve.storage.File(
     node_name=config.node_name,
     datastore_id='local',
     content_type='snippets',
-    source_raw=proxmoxve.storage.FileSourceRawArgs(
-        data=jinja2.Template(
+    source_raw={
+        'data': jinja2.Template(
             pathlib.Path('assets/cloud-init/cloud-config.yaml').read_text()
         ).render(master_config_dict),
-        file_name=f'{master_name}.yaml',
-    ),
+        'file_name': f'{master_name}.yaml',
+    },
     opts=pulumi.ResourceOptions(provider=provider, delete_before_replace=True),
 )
 
@@ -64,32 +64,28 @@ master_vm = proxmoxve.vm.VirtualMachine(
     node_name=config.node_name,
     description='Kubernetes Master, maintained with Pulumi.',
     cpu={'cores': 2},
-    memory=proxmoxve.vm.VirtualMachineMemoryArgs(
+    memory={
         # unlike what the names suggest, `floating` is the minimum memory and `dediacted` the
         # potential maximum, when ballooning:
-        dedicated=4096,
-        floating=2048,
-    ),
-    cdrom=proxmoxve.vm.VirtualMachineCdromArgs(enabled=False),
+        'dedicated': 4096,
+        'floating': 2048,
+    },
+    cdrom={'enabled': False},
     disks=[
-        proxmoxve.vm.VirtualMachineDiskArgs(
-            interface='virtio0',
-            size=8,
-            file_id=cloud_image.id,
-            iothread=True,
-            discard='on',
-        ),
+        {
+            'interface': 'virtio0',
+            'size': 8,
+            'file_id': cloud_image.id,
+            'iothread': True,
+            'discard': 'on',
+        },
     ],
-    network_devices=[proxmoxve.vm.VirtualMachineNetworkDeviceArgs(bridge='vmbr0')],
-    agent=proxmoxve.vm.VirtualMachineAgentArgs(enabled=True),
-    initialization=proxmoxve.vm.VirtualMachineInitializationArgs(
-        ip_configs=[
-            proxmoxve.vm.VirtualMachineInitializationIpConfigArgs(
-                ipv4=proxmoxve.vm.VirtualMachineInitializationIpConfigIpv4Args(address='dhcp')
-            )
-        ],
-        user_data_file_id=cloud_config.id,
-    ),
+    network_devices=[{'bridge': 'vmbr0'}],
+    agent={'enabled': True},
+    initialization={
+        'ip_configs': [{'ipv4': {'address': 'dhcp'}}],
+        'user_data_file_id': cloud_config.id,
+    },
     opts=pulumi.ResourceOptions(
         provider=provider,
         # disks and cdrom has contant diffs and lead to update errors, possibly a bug in provider:
