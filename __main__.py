@@ -1,5 +1,6 @@
 """Kubernetes stack."""
 
+import os
 import pathlib
 
 import jinja2
@@ -12,18 +13,14 @@ from model import Config
 pulumi_config = pulumi.Config()
 config = Config.model_validate(pulumi_config.require_object('config'))
 
-# we will use PVE PROD to create DEV VMs, there is no point in using slow VM performance on PVE DEV:
-proxmox_stack_prod = pulumi.StackReference(f'{pulumi.get_organization()}/deploy-proxmox/prod')
-
 provider = proxmoxve.Provider(
     'provider',
-    endpoint=proxmox_stack_prod.get_output('api-endpoint'),
-    api_token=proxmox_stack_prod.get_output('api-token'),
-    insecure=proxmox_stack_prod.get_output('api-insecure'),
-    ssh=proxmoxve.ProviderSshArgs(
-        username=proxmox_stack_prod.get_output('ssh-user'),
-        private_key=proxmox_stack_prod.get_output('ssh-private-key'),
-    ),
+    endpoint='https://pve-01.mpagel.de:8006',
+    api_token=os.environ['PROXMOX_API_TOKEN__PVE_01__PULUMI'],
+    ssh={
+        'username': 'root',
+        'agent': True,
+    },
 )
 
 stack_name = pulumi.get_stack()
@@ -66,7 +63,7 @@ master_vm = proxmoxve.vm.VirtualMachine(
     tags=[stack_name],
     node_name=config.node_name,
     description='Kubernetes Master, maintained with Pulumi.',
-    cpu=proxmoxve.vm.VirtualMachineCpuArgs(cores=2),
+    cpu={'cores': 2},
     memory=proxmoxve.vm.VirtualMachineMemoryArgs(
         # unlike what the names suggest, `floating` is the minimum memory and `dediacted` the
         # potential maximum, when ballooning:

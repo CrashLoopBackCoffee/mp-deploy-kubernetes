@@ -12,8 +12,6 @@ users:
 runcmd:
   # system update and prep:
   - hostnamectl set-hostname {{ name }}
-  - timedatectl set-timezone Europe/Berlin
-  - systemctl restart systemd-timesyncd
   - apt-get update -y
   - apt-get upgrade -y
   - DEBIAN_FRONTEND=noninteractive apt-get install -y
@@ -23,10 +21,6 @@ runcmd:
     ca-certificates
     curl
     gpg
-
-  # disable swap:
-  - swapoff -a
-  - sed -i '/\bswap\b/ s/^\(.*\)$/#\1/' /etc/fstab
 
   # microk8s installation:
   - snap install microk8s --classic
