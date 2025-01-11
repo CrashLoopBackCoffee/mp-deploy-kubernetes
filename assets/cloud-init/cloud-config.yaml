@@ -1,0 +1,42 @@
+#cloud-config
+users:
+  - default
+  - name: "{{ username }}"
+    groups:
+      - sudo
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - "{{ ssh_public_key }}"
+    lock_passwd: true
+    sudo: ALL=(ALL) NOPASSWD:ALL
+runcmd:
+  # system update and prep:
+  - hostnamectl set-hostname {{ name }}
+  - timedatectl set-timezone Europe/Berlin
+  - systemctl restart systemd-timesyncd
+  - apt-get update -y
+  - apt-get upgrade -y
+  - DEBIAN_FRONTEND=noninteractive apt-get install -y
+    vim
+    net-tools
+    apt-transport-https
+    ca-certificates
+    curl
+    gpg
+
+  # disable swap:
+  - swapoff -a
+  - sed -i '/\bswap\b/ s/^\(.*\)$/#\1/' /etc/fstab
+
+  # microk8s installation:
+  - snap install microk8s --classic
+  - usermod -a -G microk8s {{ username }}
+  - microk8s status --wait-ready
+  - mkdir -p /home/{{ username }}/.kube
+  - chown -R {{ username }} /home/{{ username }}/.kube
+  - microk8s config > /home/{{ username }}/.kube/config
+
+  # start guest agent last to keep Pulumi waiting until all of the above it ready:
+  - DEBIAN_FRONTEND=noninteractive apt-get install -y qemu-guest-agent
+  - systemctl enable --now qemu-guest-agent
+  - echo "done" > /tmp/cloud-config.done

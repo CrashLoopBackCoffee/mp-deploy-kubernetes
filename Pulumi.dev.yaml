@@ -1,9 +1,12 @@
 config:
   deploy-kubernetes:config:
     node-name: pve
-    controlplane-nodes:
-      vmid-start: 1100
-      number-of-nodes: 1
-    worker-nodes:
-      vmid-start: 1200
-      number-of-nodes: 1
+    cloud-image: https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img
+    all-vms:
+      username: mike
+      ssh-public-key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIThrWKIoEj20S3DosaiKBRUGA89qe1xz9hch2+VhSGd mpagel@k8s-dev
+      ssh-private-key:
+        secure: AAABAG60vM8l5BFSuM/ZfEDOk3cV2ZfYdtMiAdVnbPkY+SJ1fTU5QCdJlsY1k1L1XbIaNw/1hyZ23mLQ9Lqh7LYw4W1MaOtQssWRM9rm3hTyYKzqCxtqM1ougC8VqHg5bmNnH9idpNNKZP0hfINucySJwRBOJPaEsGN8HakFiJuSBKTGa+hwEjdN6WrsYh+4mURsqsIYmfXk69zNe7FsaKYhkdSyidQ4r1SjGTqCBcokgRrH2NRsqlZGf1qCvYlmWQXXjp13P7dzgbc80wZ+Rr1ka7zfaZc/n7SLgX12Tg9gdFNJMRvUnRJJq3boIjuAnvBOyFG9ay4Kgxw3srxPE5VBfEoEGpLX1eZo9TbOY3X6/n+NzvoYGJAmwsjyLX8ER4LpweR/iEPYhskgucHtxwLhxLZ7562Q2uDM0qLWvMarmwHl0jGf6SW77oHBcO0dMWTHXoDO7xSEYH/03pBf2m1SKK+7Baw7OVBBqWQ2N/QqUGJxrnErzFx3+lbKxU+zLhIrvUjhRw0PGwYV8oF6usiSn75tRDcTIj5+dNbvdAkX1RdSKXZxRRItu7fS1fdy1wM53dynyEGX/A==
+    control-plane-vms:
+      - name: k8s-master-0
+        vmid: 1100

@@ -1,109 +1,123 @@
 """Kubernetes stack."""
+
+import pathlib
+
+import jinja2
 import pulumi
-import pulumi_kubernetes as k8s
+import pulumi_command as command
+import pulumi_proxmoxve as proxmoxve
 
-from model import ConfigModel
-from proxmox import create_vms_from_cdrom, download_iso, get_pve_provider
-from talos import apply_machine_configuration, bootstrap_cluster, get_configurations, get_images
-
-iso_image_url, installer_image_url = get_images()
+from model import Config
 
 pulumi_config = pulumi.Config()
-config = ConfigModel.model_validate(pulumi_config.require_object('config'))
+config = Config.model_validate(pulumi_config.require_object('config'))
 
-pve_provider = get_pve_provider()
+# we will use PVE PROD to create DEV VMs, there is no point in using slow VM performance on PVE DEV:
+proxmox_stack_prod = pulumi.StackReference(f'{pulumi.get_organization()}/deploy-proxmox/prod')
 
-vm_boot_image = download_iso(
-    name='talos-boot-image',
-    node_name=config.node_name,
-    url=iso_image_url,
+provider = proxmoxve.Provider(
+    'provider',
+    endpoint=proxmox_stack_prod.get_output('api-endpoint'),
+    api_token=proxmox_stack_prod.get_output('api-token'),
+    insecure=proxmox_stack_prod.get_output('api-insecure'),
+    ssh=proxmoxve.ProviderSshArgs(
+        username=proxmox_stack_prod.get_output('ssh-user'),
+        private_key=proxmox_stack_prod.get_output('ssh-private-key'),
+    ),
 )
 
 stack_name = pulumi.get_stack()
 
-# create VMs for controlplane and workers
-controlplane_address_by_name = create_vms_from_cdrom(
-    pve_node_name=config.node_name,
-    range_=config.controlplane_nodes,
-    vm_name='cp',
-    vm_boot_image=vm_boot_image,
-    controlplane=True,
-)
-worker_address_by_name = create_vms_from_cdrom(
-    pve_node_name=config.node_name,
-    range_=config.worker_nodes,
-    vm_name='wk',
-    vm_boot_image=vm_boot_image,
-    controlplane=False,
+cloud_image = proxmoxve.download.File(
+    'cloud-image',
+    content_type='iso',
+    datastore_id='local',
+    node_name=config.node_name,
+    overwrite=False,
+    url=str(config.cloud_image),
+    opts=pulumi.ResourceOptions(provider=provider),
 )
 
-assert controlplane_address_by_name and worker_address_by_name
+master_config = config.control_plane_vms[0]
+master_name = f'{master_config.name}-{stack_name}'
 
-pulumi.export('controlplane-ipv4-addresses', controlplane_address_by_name)
-pulumi.export('worker-ipv4-addresses', worker_address_by_name)
+# serialize master config and extend with global config attributes:
+master_config_dict = config.all_vms.model_dump() | master_config.model_dump()
 
-_, cluster_endpoint_address = next(iter(controlplane_address_by_name.items()))
-cluster_endpoint = pulumi.Output.concat('https://', cluster_endpoint_address, ':6443')
-cluster_name = stack_name
-pulumi.export(f'{cluster_name}-endpoint', cluster_endpoint)
-
-talos_configurations = get_configurations(
-    cluster_name=cluster_name,
-    cluster_endpoint=cluster_endpoint,
-    endpoints=pulumi.Output.all(
-        *controlplane_address_by_name.values(),
+cloud_config = proxmoxve.storage.File(
+    'cloud-config',
+    node_name=config.node_name,
+    datastore_id='local',
+    content_type='snippets',
+    source_raw=proxmoxve.storage.FileSourceRawArgs(
+        data=jinja2.Template(
+            pathlib.Path('assets/cloud-init/cloud-config.yaml').read_text()
+        ).render(master_config_dict),
+        file_name=f'{master_name}.yaml',
     ),
-    nodes=pulumi.Output.all(
-        *controlplane_address_by_name.values(),
-        *worker_address_by_name.values(),
+    opts=pulumi.ResourceOptions(provider=provider, delete_before_replace=True),
+)
+
+
+master_vm = proxmoxve.vm.VirtualMachine(
+    master_name,
+    name=master_name,
+    vm_id=master_config.vmid,
+    tags=[stack_name],
+    node_name=config.node_name,
+    description='Kubernetes Master, maintained with Pulumi.',
+    cpu=proxmoxve.vm.VirtualMachineCpuArgs(cores=2),
+    memory=proxmoxve.vm.VirtualMachineMemoryArgs(
+        # unlike what the names suggest, `floating` is the minimum memory and `dediacted` the
+        # potential maximum, when ballooning:
+        dedicated=4096,
+        floating=2048,
     ),
-    image=installer_image_url,
+    cdrom=proxmoxve.vm.VirtualMachineCdromArgs(enabled=False),
+    disks=[
+        proxmoxve.vm.VirtualMachineDiskArgs(
+            interface='virtio0',
+            size=8,
+            file_id=cloud_image.id,
+            iothread=True,
+            discard='on',
+        ),
+    ],
+    network_devices=[proxmoxve.vm.VirtualMachineNetworkDeviceArgs(bridge='vmbr0')],
+    agent=proxmoxve.vm.VirtualMachineAgentArgs(enabled=True),
+    initialization=proxmoxve.vm.VirtualMachineInitializationArgs(
+        ip_configs=[
+            proxmoxve.vm.VirtualMachineInitializationIpConfigArgs(
+                ipv4=proxmoxve.vm.VirtualMachineInitializationIpConfigIpv4Args(address='dhcp')
+            )
+        ],
+        user_data_file_id=cloud_config.id,
+    ),
+    opts=pulumi.ResourceOptions(
+        provider=provider,
+        # disks and cdrom has contant diffs and lead to update errors, possibly a bug in provider:
+        ignore_changes=['disks', 'cdrom'],
+        replace_on_changes=['initialization'],
+    ),
 )
 
-pulumi.export('talos-client-config', talos_configurations.talos)
+master_vm_ipv4 = master_vm.ipv4_addresses[1][0]
+pulumi.export(f'{master_name}-ipv4', master_vm_ipv4)
 
-applied = []
-for cp_node_name, cp_node_ipv4 in controlplane_address_by_name.items():
-    applied.append(
-        apply_machine_configuration(
-            node_name=cp_node_name,
-            node_ipv4=cp_node_ipv4,
-            client_configuration=talos_configurations.client,
-            machine_configuration=talos_configurations.controlplane.machine_configuration,
-        )
-    )
-for cp_node_name, cp_node_ipv4 in worker_address_by_name.items():
-    applied.append(
-        apply_machine_configuration(
-            node_name=cp_node_name,
-            node_ipv4=cp_node_ipv4,
-            client_configuration=talos_configurations.client,
-            machine_configuration=talos_configurations.worker.machine_configuration,
-        )
-    )
-
-kube_config = bootstrap_cluster(
-    name=f'{cluster_name}-talos-bootstrap',
-    client_configuration=talos_configurations.client,
-    endpoint_node=cluster_endpoint_address,
-    control_plane_nodes=controlplane_address_by_name.values(),
-    worker_nodes=worker_address_by_name.values(),
-    depends_on=applied,
-    wait=True,
+master_kube_config_command = command.remote.Command(
+    f'{master_name}-kube-config',
+    connection=command.remote.ConnectionArgs(
+        host=master_vm_ipv4,
+        user=config.all_vms.username,
+        private_key=config.all_vms.ssh_private_key,
+    ),
+    add_previous_output_in_env=False,
+    create='microk8s config',
+    # only log stderr and mark stdout as secret as it contains the private keys to cluster:
+    logging=command.remote.Logging.STDERR,
+    opts=pulumi.ResourceOptions(additional_secret_outputs=['stdout']),
 )
 
-pulumi.export('kube-config', kube_config.kubeconfig_raw)
-
-k8s_provider = k8s.Provider(
-    'k8s-provider',
-    enable_server_side_apply=True,
-    kubeconfig=kube_config.kubeconfig_raw,
-)
-
-# do the kustomize run locally and only process result here to work around
-# https://github.com/pulumi/pulumi-kubernetes/issues/3389:
-k8s.yaml.v2.ConfigFile(
-    'local-path-provisioner',
-    file='./kustomize/local-path-provisioner.yaml',
-    opts=pulumi.ResourceOptions(provider=k8s_provider),
-)
+# export to kube config with
+# p stack output --show-secrets k8s-master-0-dev-kube-config > ~/.kube/config
+pulumi.export(f'{master_name}-kube-config', master_kube_config_command.stdout)
