@@ -62,9 +62,9 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "jinja2", specifier = "~=3.1.4" },
-    { name = "pulumi", specifier = "~=3.139.0" },
+    { name = "pulumi", specifier = "~=3.145.0" },
     { name = "pulumi-command", specifier = "~=1.0.1" },
-    { name = "pulumi-proxmoxve", specifier = "~=6.15.3" },
+    { name = "pulumi-proxmoxve", specifier = "~=6.18.1" },
     { name = "pydantic", specifier = "~=2.10.1" },
 ]
 
@@ -163,6 +163,15 @@ wheels = [
 ]
 
 [[package]]
+name = "pip"
+version = "24.3.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/f4/b1/b422acd212ad7eedddaf7981eee6e5de085154ff726459cf2da7c5a184c1/pip-24.3.1.tar.gz", hash = "sha256:ebcb60557f2aefabc2e0f918751cd24ea0d56d8ec5445fe1807f1d2109660b99", size = 1931073 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ef/7d/500c9ad20238fcfcb4cb9243eede163594d7020ce87bd9610c9e02771876/pip-24.3.1-py3-none-any.whl", hash = "sha256:3790624780082365f47549d032f3770eeb2b1e8bd1f7b2e02dace1afa361b4ed", size = 1822182 },
+]
+
+[[package]]
 name = "protobuf"
 version = "4.25.5"
 source = { registry = "https://pypi.org/simple" }
@@ -178,19 +187,20 @@ wheels = [
 
 [[package]]
 name = "pulumi"
-version = "3.139.0"
+version = "3.145.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "debugpy" },
     { name = "dill" },
     { name = "grpcio" },
+    { name = "pip" },
     { name = "protobuf" },
     { name = "pyyaml" },
     { name = "semver" },
     { name = "six" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b5/ea/e1568e05aba44cc40fa25c58e90029271df3099d136b9fd73254d17b096b/pulumi-3.139.0-py3-none-any.whl", hash = "sha256:f0152206118f3767c3da60e2746fc004abd2bae305d1a98013ee542da761d292", size = 288746 },
+    { url = "https://files.pythonhosted.org/packages/45/2a/c2f4537811ef6851df16234965bd9ea6f0ec25bbc640ce343a2a83440ad3/pulumi-3.145.0-py3-none-any.whl", hash = "sha256:5ef1e73e8c07fd25fcfa2e5a68d03e84141d23e584153915c328ec1de6f14611", size = 297250 },
 ]
 
 [[package]]
@@ -209,14 +219,14 @@ wheels = [
 
 [[package]]
 name = "pulumi-proxmoxve"
-version = "6.15.3"
+version = "6.18.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "parver" },
     { name = "pulumi" },
     { name = "semver" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/7b/0c/841e98a37a3148bca6a2de77981101db28bb69c09ea3df26b2655cb5882b/pulumi_proxmoxve-6.15.3.tar.gz", hash = "sha256:98c991248aa2859abf4e51ae4f92d8ffb6235f49c31946d7f9d88783f3391e7d", size = 164592 }
+sdist = { url = "https://files.pythonhosted.org/packages/bf/50/840c70586e01ff6f32bc7c7e6a4365f345e9ab98c7cd0a21008d6f0ca256/pulumi_proxmoxve-6.18.1.tar.gz", hash = "sha256:c242cb0a845598c93793d724f660309af4ac40de33e61fa36db5855a648f2d7c", size = 164999 }
 
 [[package]]
 name = "pydantic"
