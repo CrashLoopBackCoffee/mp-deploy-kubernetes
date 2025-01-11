@@ -78,19 +78,26 @@ master_vm = proxmoxve.vm.VirtualMachine(
             'file_id': cloud_image.id,
             'iothread': True,
             'discard': 'on',
+            # hack to avoid diff in subsequent runs:
+            'speed': {
+                'read': 10000,
+            },
         },
     ],
     network_devices=[{'bridge': 'vmbr0'}],
     agent={'enabled': True},
+    # TODO Compare and update:
     initialization={
         'ip_configs': [{'ipv4': {'address': 'dhcp'}}],
         'user_data_file_id': cloud_config.id,
     },
+    stop_on_destroy=True,
+    on_boot=stack_name == 'prod',
+    machine='q35',
     opts=pulumi.ResourceOptions(
         provider=provider,
         # disks and cdrom has contant diffs and lead to update errors, possibly a bug in provider:
-        ignore_changes=['disks', 'cdrom'],
-        replace_on_changes=['initialization'],
+        ignore_changes=['cdrom'],
     ),
 )
 
