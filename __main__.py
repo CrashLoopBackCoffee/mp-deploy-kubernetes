@@ -63,7 +63,11 @@ master_vm = proxmoxve.vm.VirtualMachine(
     tags=[stack_name],
     node_name=config.node_name,
     description='Kubernetes Master, maintained with Pulumi.',
-    cpu={'cores': 2},
+    cpu={
+        'cores': 2,
+        # use exact CPU flags of host, as migration of VM for k8s nodes is irrelevant:
+        'type': 'host',
+    },
     memory={
         # unlike what the names suggest, `floating` is the minimum memory and `dediacted` the
         # potential maximum, when ballooning:
