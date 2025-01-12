@@ -69,10 +69,8 @@ master_vm = proxmoxve.vm.VirtualMachine(
         'type': 'host',
     },
     memory={
-        # unlike what the names suggest, `floating` is the minimum memory and `dediacted` the
-        # potential maximum, when ballooning:
-        'dedicated': 4096,
-        'floating': 2048,
+        'dedicated': 4096,  # maximum
+        'floating': 2048,  # minimum
     },
     cdrom={'enabled': False},
     disks=[
@@ -98,6 +96,8 @@ master_vm = proxmoxve.vm.VirtualMachine(
     stop_on_destroy=True,
     on_boot=stack_name == 'prod',
     machine='q35',
+    # Linux 2.6+:
+    operating_system={'type': 'l26'},
     opts=pulumi.ResourceOptions(
         provider=provider,
         # disks and cdrom has contant diffs and lead to update errors, possibly a bug in provider:
