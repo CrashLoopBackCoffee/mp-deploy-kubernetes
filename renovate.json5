@@ -29,17 +29,6 @@
             "versioningTemplate": "{{#if versioning}}{{versioning}}{{else}}semver{{/if}}"
         }
     ],
-    "packageRules": [
-        {
-            "groupName": "pulumi",
-            "schedule": [
-                "before 10am on Monday"
-            ],
-            "matchPackageNames": [
-                "/pulumi/"
-            ]
-        }
-    ],
     "prHourlyLimit": 10,
     "rangeStrategy": "replace"
 }
