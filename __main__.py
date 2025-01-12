@@ -8,7 +8,7 @@ import pulumi
 import pulumi_command as command
 import pulumi_proxmoxve as proxmoxve
 
-from model import Config
+from kubernetes.model import Config
 
 pulumi_config = pulumi.Config()
 config = Config.model_validate(pulumi_config.require_object('config'))
