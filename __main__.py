@@ -80,16 +80,22 @@ master_vm = proxmoxve.vm.VirtualMachine(
             'file_id': cloud_image.id,
             'iothread': True,
             'discard': 'on',
+            'file_format': 'raw',
             # hack to avoid diff in subsequent runs:
             'speed': {
                 'read': 10000,
             },
         },
     ],
-    network_devices=[{'bridge': 'vmbr0'}],
+    network_devices=[
+        {
+            'bridge': 'vmbr0',
+            'model': 'virtio',
+        }
+    ],
     agent={'enabled': True},
-    # TODO Compare and update:
     initialization={
+        # TODO Turn into state IP address and setup DNS when config is refactored.
         'ip_configs': [{'ipv4': {'address': 'dhcp'}}],
         'user_data_file_id': cloud_config.id,
     },
