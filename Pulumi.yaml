@@ -1,4 +1,4 @@
-name: deploy-kubernetes
+name: kubernetes
 description: Kubernetes stack on Proxmox cluster
 pulumi:disable-default-providers:
   - kubernetes
