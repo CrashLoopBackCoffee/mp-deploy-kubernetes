@@ -30,12 +30,23 @@ class ProxmoxConfig(ConfigBaseModel):
     verify_ssl: bool = True
 
 
+class VirtualMachineConfig(ConfigBaseModel):
+    name: str
+    vmid: pydantic.PositiveInt
+    cores: pydantic.PositiveInt
+    memory_mb_min: pydantic.PositiveInt
+    memory_mb_max: pydantic.PositiveInt
+    disk_size_gb: pydantic.PositiveInt
+
+
 class MicroK8sConfig(ConfigBaseModel):
     cloud_image_url: pydantic.HttpUrl = pydantic.Field(
         default=pydantic.HttpUrl(
             'https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img'
         )
     )
+    ssh_public_key: str
+    master_nodes: list[VirtualMachineConfig]
 
 
 class ComponentConfig(ConfigBaseModel):

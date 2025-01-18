@@ -1,0 +1,16 @@
+config:
+  kubernetes:config:
+    proxmox:
+      node-name: pve
+      api-endpoint: https://pve-01.mpagel.de:8006
+      api-token:
+        envvar: PROXMOX_API_TOKEN__PVE_01__PULUMI
+    microk8s:
+      master-nodes:
+        - name: k8s-dev-master-0
+          vmid: 1010
+          cores: 2
+          memory_mb_min: 2048
+          memory_mb_max: 4096
+          disk_size_gb: 8
+      ssh-public-key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIThrWKIoEj20S3DosaiKBRUGA89qe1xz9hch2+VhSGd mpagel@k8s-dev
