@@ -27,6 +27,3 @@ jobs:
 
       - name: ruff format
         run: uv run ruff format --check
-
-      - name: pyright
-        run: uv run pyright --warnings

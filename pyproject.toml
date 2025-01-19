@@ -1,5 +1,5 @@
 [project]
-name = "deploy-kubernetes"
+name = "kubernetes"
 version = "0.1.0"
 requires-python = ">=3.13"
 dependencies = [
@@ -15,6 +15,10 @@ dev=[
     "ruff~=0.9.1",
     "pyright~=1.1.368",
 ]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [tool.ruff]
 line-length = 100

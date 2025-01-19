@@ -1,11 +1,10 @@
-name: deploy-kubernetes
+name: kubernetes
 description: Kubernetes stack on Proxmox cluster
+pulumi:disable-default-providers:
+  - kubernetes
+  - proxmoxve
 runtime:
   name: python
   options:
     toolchain: poetry
     virtualenv: .venv
-config:
-  pulumi:tags:
-    value:
-      pulumi:template: python
