@@ -45,6 +45,7 @@ class MicroK8sConfig(ConfigBaseModel):
             'https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img'
         )
     )
+    ssh_user: str = 'ubuntu'
     ssh_public_key: str
     master_nodes: list[VirtualMachineConfig]
 

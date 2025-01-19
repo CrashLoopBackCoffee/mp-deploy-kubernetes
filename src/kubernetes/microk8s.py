@@ -4,6 +4,7 @@ import pathlib
 
 import jinja2
 import pulumi as p
+import pulumi_command as command
 import pulumi_proxmoxve as proxmoxve
 
 from kubernetes.model import ComponentConfig
@@ -43,7 +44,7 @@ def create_microk8s(component_config: ComponentConfig, proxmox_provider: proxmox
                 'data': cloud_config_template.render(
                     master_config.model_dump()
                     | {
-                        'username': 'ubuntu',
+                        'username': component_config.microk8s.ssh_user,
                         'ssh_public_key': component_config.microk8s.ssh_public_key,
                     }
                 ),
@@ -108,3 +109,27 @@ def create_microk8s(component_config: ComponentConfig, proxmox_provider: proxmox
                 p.ResourceOptions(ignore_changes=['cdrom']),
             ),
         )
+
+        master_vm_ipv4 = master_vm.ipv4_addresses[1][0]
+        p.export(f'{master_config.name}-ipv4', master_vm_ipv4)
+
+        master_connection = command.remote.ConnectionArgs(
+            host=master_vm_ipv4,
+            user=component_config.microk8s.ssh_user,
+        )
+
+        kube_config_command = command.remote.Command(
+            f'{master_config.name}-kube-config',
+            connection=master_connection,
+            add_previous_output_in_env=False,
+            create='microk8s config',
+            # only log stderr and mark stdout as secret as it contains the private keys to cluster:
+            logging=command.remote.Logging.STDERR,
+            opts=p.ResourceOptions(additional_secret_outputs=['stdout']),
+        )
+
+        kube_config = kube_config_command.stdout
+
+        # export to kube config with
+        # p stack output --show-secrets <name>-kube-config > ~/.kube/config
+        p.export(f'{master_config.name}-kube-config', kube_config)

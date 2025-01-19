@@ -29,6 +29,7 @@ runcmd:
   - mkdir -p /home/{{ username }}/.kube
   - chown -R {{ username }} /home/{{ username }}/.kube
   - microk8s config > /home/{{ username }}/.kube/config
+  - microk8s enable hostpath-storage
 
   # start guest agent last to keep Pulumi waiting until all of the above is ready:
   - DEBIAN_FRONTEND=noninteractive apt-get install -y qemu-guest-agent
