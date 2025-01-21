@@ -56,6 +56,14 @@ def create_microk8s(component_config: ComponentConfig, proxmox_provider: proxmox
             ),
         )
 
+        gateway_address = str(master_config.ipv4_address.network.network_address + 1)
+
+        vlan_config: proxmoxve.vm.VirtualMachineNetworkDeviceArgsDict = (
+            {'vlan_id': int(component_config.microk8s.vlan_id)}
+            if component_config.microk8s.vlan_id
+            else {}
+        )
+
         master_vm = proxmoxve.vm.VirtualMachine(
             master_config.name,
             name=master_config.name,
@@ -91,12 +99,24 @@ def create_microk8s(component_config: ComponentConfig, proxmox_provider: proxmox
                 {
                     'bridge': 'vmbr0',
                     'model': 'virtio',
+                    **vlan_config,
                 }
             ],
             agent={'enabled': True},
             initialization={
                 # TODO Turn into state IP address and setup DNS when config is refactored.
-                'ip_configs': [{'ipv4': {'address': 'dhcp'}}],
+                'ip_configs': [
+                    {
+                        'ipv4': {
+                            'address': str(master_config.ipv4_address),
+                            'gateway': gateway_address,
+                        }
+                    }
+                ],
+                'dns': {
+                    'domain': 'local',
+                    'servers': [gateway_address],
+                },
                 'user_data_file_id': cloud_config.id,
             },
             stop_on_destroy=True,
