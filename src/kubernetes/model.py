@@ -1,5 +1,6 @@
 """Configuration model."""
 
+import ipaddress
 import os
 
 import pulumi as p
@@ -33,6 +34,7 @@ class ProxmoxConfig(ConfigBaseModel):
 class VirtualMachineConfig(ConfigBaseModel):
     name: str
     vmid: pydantic.PositiveInt
+    ipv4_address: ipaddress.IPv4Interface
     cores: pydantic.PositiveInt
     memory_mb_min: pydantic.PositiveInt
     memory_mb_max: pydantic.PositiveInt
@@ -47,6 +49,7 @@ class MicroK8sConfig(ConfigBaseModel):
     )
     ssh_user: str = 'ubuntu'
     ssh_public_key: str
+    vlan_id: pydantic.PositiveInt | None = None
     master_nodes: list[VirtualMachineConfig]
 
 
