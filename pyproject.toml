@@ -3,7 +3,7 @@ name = "kubernetes"
 version = "0.1.0"
 requires-python = ">=3.13"
 dependencies = [
-    "pulumi~=3.146.0",
+    "pulumi~=3.147.0",
     "pulumi-proxmoxve~=6.18.1",
     "pydantic~=2.10.1",
     "jinja2~=3.1.4",
