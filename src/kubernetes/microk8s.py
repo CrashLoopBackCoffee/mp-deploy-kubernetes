@@ -35,6 +35,7 @@ def create_microk8s(component_config: ComponentConfig, proxmox_provider: proxmox
 
     stack_name = p.get_stack()
 
+    first_master_ipv4 = None
     for master_config in component_config.microk8s.master_nodes:
         cloud_config = proxmoxve.storage.File(
             f'cloud-config-master-{master_config.name}',
@@ -47,6 +48,7 @@ def create_microk8s(component_config: ComponentConfig, proxmox_provider: proxmox
                     | {
                         'username': component_config.microk8s.ssh_user,
                         'ssh_public_key': component_config.microk8s.ssh_public_key,
+                        'data_disk_mount': component_config.microk8s.data_disk_mount,
                     }
                 ),
                 'file_name': f'cloud-config-{master_config.name}.yaml',
@@ -145,13 +147,18 @@ def create_microk8s(component_config: ComponentConfig, proxmox_provider: proxmox
         master_vm_ipv4 = master_vm.ipv4_addresses[1][0]
         p.export(f'{master_config.name}-ipv4', master_vm_ipv4)
 
+        if not first_master_ipv4:
+            first_master_ipv4 = master_vm_ipv4
+
+    # configure cluster level properties:
+    if first_master_ipv4:
         master_connection = command.remote.ConnectionArgs(
-            host=master_vm_ipv4,
+            host=first_master_ipv4,
             user=component_config.microk8s.ssh_user,
         )
 
         kube_config_command = command.remote.Command(
-            f'{master_config.name}-kube-config',
+            'kube-config',
             connection=master_connection,
             add_previous_output_in_env=False,
             create='microk8s config',
@@ -163,8 +170,8 @@ def create_microk8s(component_config: ComponentConfig, proxmox_provider: proxmox
         kube_config = kube_config_command.stdout
 
         # export to kube config with
-        # p stack output --show-secrets <name>-kube-config > ~/.kube/config
-        p.export(f'{master_config.name}-kube-config', kube_config)
+        # p stack output --show-secrets kube-config > ~/.kube/config
+        p.export('kube-config', kube_config)
 
         k8s_provider = k8s.Provider(
             'microk8s',
@@ -177,7 +184,7 @@ def create_microk8s(component_config: ComponentConfig, proxmox_provider: proxmox
         k8s.storage.v1.StorageClass(
             'data-hostpath',
             provisioner='microk8s.io/hostpath',
-            parameters={'pvDir': master_config.data_disk_mount},
+            parameters={'pvDir': component_config.microk8s.data_disk_mount},
             reclaim_policy='Delete',
             volume_binding_mode='WaitForFirstConsumer',
             opts=k8s_opts,

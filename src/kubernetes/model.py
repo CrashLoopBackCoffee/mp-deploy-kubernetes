@@ -40,7 +40,6 @@ class VirtualMachineConfig(ConfigBaseModel):
     memory_mb_max: pydantic.PositiveInt
     root_disk_size_gb: pydantic.PositiveInt
     data_disk_size_gb: pydantic.PositiveInt
-    data_disk_mount: str = '/mnt/data'
 
 
 class MicroK8sConfig(ConfigBaseModel):
@@ -53,6 +52,7 @@ class MicroK8sConfig(ConfigBaseModel):
     ssh_public_key: str
     vlan_id: pydantic.PositiveInt | None = None
     master_nodes: list[VirtualMachineConfig]
+    data_disk_mount: str = '/mnt/data'
 
 
 class ComponentConfig(ConfigBaseModel):
