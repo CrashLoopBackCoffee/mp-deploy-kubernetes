@@ -13,6 +13,7 @@ config:
           cores: 2
           memory_mb_min: 2048
           memory_mb_max: 4096
-          disk_size_gb: 8
+          root_disk_size_gb: 8
+          data_disk_size_gb: 12
       ssh-public-key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIThrWKIoEj20S3DosaiKBRUGA89qe1xz9hch2+VhSGd mpagel@k8s-dev
       vlan_id: 10

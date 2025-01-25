@@ -5,6 +5,7 @@ import pathlib
 import jinja2
 import pulumi as p
 import pulumi_command as command
+import pulumi_kubernetes as k8s
 import pulumi_proxmoxve as proxmoxve
 
 from kubernetes.model import ComponentConfig
@@ -84,8 +85,19 @@ def create_microk8s(component_config: ComponentConfig, proxmox_provider: proxmox
             disks=[
                 {
                     'interface': 'virtio0',
-                    'size': master_config.disk_size_gb,
+                    'size': master_config.root_disk_size_gb,
                     'file_id': cloud_image.id,
+                    'iothread': True,
+                    'discard': 'on',
+                    'file_format': 'raw',
+                    # hack to avoid diff in subsequent runs:
+                    'speed': {
+                        'read': 10000,
+                    },
+                },
+                {
+                    'interface': 'virtio1',
+                    'size': master_config.data_disk_size_gb,
                     'iothread': True,
                     'discard': 'on',
                     'file_format': 'raw',
@@ -153,3 +165,20 @@ def create_microk8s(component_config: ComponentConfig, proxmox_provider: proxmox
         # export to kube config with
         # p stack output --show-secrets <name>-kube-config > ~/.kube/config
         p.export(f'{master_config.name}-kube-config', kube_config)
+
+        k8s_provider = k8s.Provider(
+            'microk8s',
+            kubeconfig=kube_config,
+        )
+
+        k8s_opts = p.ResourceOptions(provider=k8s_provider)
+
+        # create hostpath storage class to use mount data disk:
+        k8s.storage.v1.StorageClass(
+            'data-hostpath',
+            provisioner='microk8s.io/hostpath',
+            parameters={'pvDir': master_config.data_disk_mount},
+            reclaim_policy='Delete',
+            volume_binding_mode='WaitForFirstConsumer',
+            opts=k8s_opts,
+        )

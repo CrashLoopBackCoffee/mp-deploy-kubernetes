@@ -38,7 +38,9 @@ class VirtualMachineConfig(ConfigBaseModel):
     cores: pydantic.PositiveInt
     memory_mb_min: pydantic.PositiveInt
     memory_mb_max: pydantic.PositiveInt
-    disk_size_gb: pydantic.PositiveInt
+    root_disk_size_gb: pydantic.PositiveInt
+    data_disk_size_gb: pydantic.PositiveInt
+    data_disk_mount: str = '/mnt/data'
 
 
 class MicroK8sConfig(ConfigBaseModel):
