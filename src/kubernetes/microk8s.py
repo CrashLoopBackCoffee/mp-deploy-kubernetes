@@ -170,3 +170,15 @@ def create_microk8s(component_config: ComponentConfig, proxmox_provider: proxmox
             'microk8s',
             kubeconfig=kube_config,
         )
+
+        k8s_opts = p.ResourceOptions(provider=k8s_provider)
+
+        # create hostpath storage class to use mount data disk:
+        k8s.storage.v1.StorageClass(
+            'data-hostpath',
+            provisioner='microk8s.io/hostpath',
+            parameters={'pvDir': master_config.data_disk_mount},
+            reclaim_policy='Delete',
+            volume_binding_mode='WaitForFirstConsumer',
+            opts=k8s_opts,
+        )
