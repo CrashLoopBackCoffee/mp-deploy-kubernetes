@@ -31,6 +31,12 @@ class ProxmoxConfig(ConfigBaseModel):
     verify_ssl: bool = True
 
 
+class MetalLbConfig(ConfigBaseModel):
+    version: str
+    ipv4_start: ipaddress.IPv4Address
+    ipv4_end: ipaddress.IPv4Address
+
+
 class VirtualMachineConfig(ConfigBaseModel):
     name: str
     vmid: pydantic.PositiveInt
@@ -53,6 +59,7 @@ class MicroK8sConfig(ConfigBaseModel):
     vlan_id: pydantic.PositiveInt | None = None
     master_nodes: list[VirtualMachineConfig]
     data_disk_mount: str = '/mnt/data'
+    metallb: MetalLbConfig
 
 
 class ComponentConfig(ConfigBaseModel):

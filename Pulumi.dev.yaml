@@ -17,3 +17,8 @@ config:
           data_disk_size_gb: 12
       ssh-public-key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIThrWKIoEj20S3DosaiKBRUGA89qe1xz9hch2+VhSGd mpagel@k8s-dev
       vlan_id: 10
+      metallb:
+        # renovate: datasource=github-releases packageName=metallb/metallb versioning=semver
+        version: 0.14.9
+        ipv4-start: 10.0.10.115
+        ipv4-end: 10.0.10.120

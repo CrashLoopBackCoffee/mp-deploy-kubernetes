@@ -8,6 +8,7 @@ import pulumi_command as command
 import pulumi_kubernetes as k8s
 import pulumi_proxmoxve as proxmoxve
 
+from kubernetes.metallb import ensure_metallb
 from kubernetes.model import ComponentConfig
 
 
@@ -180,7 +181,7 @@ def create_microk8s(component_config: ComponentConfig, proxmox_provider: proxmox
 
         k8s_opts = p.ResourceOptions(provider=k8s_provider)
 
-        # create hostpath storage class to use mount data disk:
+        # create hostpath storage class to use mounted data disk:
         k8s.storage.v1.StorageClass(
             'data-hostpath',
             provisioner='microk8s.io/hostpath',
@@ -189,3 +190,5 @@ def create_microk8s(component_config: ComponentConfig, proxmox_provider: proxmox
             volume_binding_mode='WaitForFirstConsumer',
             opts=k8s_opts,
         )
+
+        ensure_metallb(component_config, k8s_provider)
