@@ -22,3 +22,7 @@ config:
         version: 0.14.9
         ipv4-start: 10.0.10.115
         ipv4-end: 10.0.10.120
+      cert-manager:
+        # renovate: datasource=github-releases packageName=cert-manager/cert-manager versioning=semver
+        version: v1.16.2
+        staging: True

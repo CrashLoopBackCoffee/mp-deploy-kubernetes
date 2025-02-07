@@ -31,6 +31,11 @@ class ProxmoxConfig(ConfigBaseModel):
     verify_ssl: bool = True
 
 
+class CertManagerConfig(ConfigBaseModel):
+    version: str
+    staging: bool = True
+
+
 class MetalLbConfig(ConfigBaseModel):
     version: str
     ipv4_start: ipaddress.IPv4Address
@@ -60,6 +65,7 @@ class MicroK8sConfig(ConfigBaseModel):
     master_nodes: list[VirtualMachineConfig]
     data_disk_mount: str = '/mnt/data'
     metallb: MetalLbConfig
+    cert_manager: CertManagerConfig
 
 
 class ComponentConfig(ConfigBaseModel):
