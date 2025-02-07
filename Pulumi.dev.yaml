@@ -26,3 +26,6 @@ config:
         # renovate: datasource=github-releases packageName=cert-manager/cert-manager versioning=semver
         version: v1.16.2
         staging: True
+      cloudflare:
+        api-token:
+          envvar: CLOUDFLARE_TOKEN

@@ -34,32 +34,9 @@ def ensure_cert_manager(component_config: ComponentConfig, k8s_provider: k8s.Pro
         opts=k8s_opts,
     )
 
-    # k8s.apiextensions.CustomResource(
-    #     'default',
-    #     api_version='metallb.io/v1beta1',
-    #     kind='IPAddressPool',
-    #     metadata={
-    #         'name': 'default',
-    #     },
-    #     spec={
-    #         'addresses': [
-    #             '-'.join(
-    #                 (
-    #                     str(component_config.microk8s.metallb.ipv4_start),
-    #                     str(component_config.microk8s.metallb.ipv4_end),
-    #                 )
-    #             )
-    #         ],
-    #     },
-    #     opts=p.ResourceOptions.merge(k8s_opts, p.ResourceOptions(depends_on=[metallb])),
-    # )
-
-    # k8s.apiextensions.CustomResource(
-    #     'default-l2-advertisment',
-    #     api_version='metallb.io/v1beta1',
-    #     kind='L2Advertisement',
-    #     metadata={
-    #         'name': 'default-l2-advertisment',
-    #     },
-    #     opts=p.ResourceOptions.merge(k8s_opts, p.ResourceOptions(depends_on=[metallb])),
-    # )
+    cloudflare_secret = k8s.core.v1.Secret(
+        'cloudflare-api-token',
+        type='Opaque',
+        string_data={'api-token': component_config.microk8s.cloudflare.api_token.value},
+        opts=k8s_opts,
+    )

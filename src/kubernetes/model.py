@@ -36,6 +36,10 @@ class CertManagerConfig(ConfigBaseModel):
     staging: bool = True
 
 
+class CloudflareConfig(ConfigBaseModel):
+    api_token: EnvVarRef
+
+
 class MetalLbConfig(ConfigBaseModel):
     version: str
     ipv4_start: ipaddress.IPv4Address
@@ -66,6 +70,7 @@ class MicroK8sConfig(ConfigBaseModel):
     data_disk_mount: str = '/mnt/data'
     metallb: MetalLbConfig
     cert_manager: CertManagerConfig
+    cloudflare: CloudflareConfig
 
 
 class ComponentConfig(ConfigBaseModel):
