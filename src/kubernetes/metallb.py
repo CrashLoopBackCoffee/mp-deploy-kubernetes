@@ -26,7 +26,7 @@ def ensure_metallb(component_config: ComponentConfig, k8s_provider: k8s.Provider
     metallb = k8s.helm.v3.Release(
         'metallb',
         chart='metallb',
-        version=component_config.microk8s.metallb.version,
+        version=component_config.metallb.version,
         namespace=ns.metadata.name,
         repository_opts={'repo': 'https://metallb.github.io/metallb'},
         opts=k8s_opts,
@@ -43,8 +43,8 @@ def ensure_metallb(component_config: ComponentConfig, k8s_provider: k8s.Provider
             'addresses': [
                 '-'.join(
                     (
-                        str(component_config.microk8s.metallb.ipv4_start),
-                        str(component_config.microk8s.metallb.ipv4_end),
+                        str(component_config.metallb.ipv4_start),
+                        str(component_config.metallb.ipv4_end),
                     )
                 )
             ],

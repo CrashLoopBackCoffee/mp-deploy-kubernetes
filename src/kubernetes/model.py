@@ -31,6 +31,15 @@ class ProxmoxConfig(ConfigBaseModel):
     verify_ssl: bool = True
 
 
+class CertManagerConfig(ConfigBaseModel):
+    version: str
+    acme_email: pydantic.EmailStr
+
+
+class CloudflareConfig(ConfigBaseModel):
+    api_token: EnvVarRef
+
+
 class MetalLbConfig(ConfigBaseModel):
     version: str
     ipv4_start: ipaddress.IPv4Address
@@ -59,9 +68,11 @@ class MicroK8sConfig(ConfigBaseModel):
     vlan_id: pydantic.PositiveInt | None = None
     master_nodes: list[VirtualMachineConfig]
     data_disk_mount: str = '/mnt/data'
-    metallb: MetalLbConfig
 
 
 class ComponentConfig(ConfigBaseModel):
     proxmox: ProxmoxConfig
     microk8s: MicroK8sConfig
+    cloudflare: CloudflareConfig
+    metallb: MetalLbConfig
+    cert_manager: CertManagerConfig
