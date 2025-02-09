@@ -33,15 +33,7 @@ class ProxmoxConfig(ConfigBaseModel):
 
 class CertManagerConfig(ConfigBaseModel):
     version: str
-    acme_staging: bool = True
     acme_email: pydantic.EmailStr
-
-    @property
-    def acme_server(self):
-        if self.acme_staging:
-            return 'https://acme-staging-v02.api.letsencrypt.org/directory'
-
-        return 'https://acme-v02.api.letsencrypt.org/directory'
 
 
 class CloudflareConfig(ConfigBaseModel):

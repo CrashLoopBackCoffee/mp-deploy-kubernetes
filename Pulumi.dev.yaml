@@ -25,7 +25,6 @@ config:
     cert-manager:
       # renovate: datasource=github-releases packageName=cert-manager/cert-manager versioning=semver
       version: v1.16.2
-      acme-staging: True
       acme-email: mike@mpagel.de
     cloudflare:
       api-token:

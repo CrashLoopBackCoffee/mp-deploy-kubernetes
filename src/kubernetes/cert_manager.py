@@ -5,6 +5,9 @@ import pulumi_kubernetes as k8s
 
 from kubernetes.model import ComponentConfig
 
+LETS_ENCRYPT_SERVER_PROD = 'https://acme-v02.api.letsencrypt.org/directory'
+LETS_ENCRYPT_SERVER_STAGING = 'https://acme-staging-v02.api.letsencrypt.org/directory'
+
 
 def ensure_cert_manager(component_config: ComponentConfig, k8s_provider: k8s.Provider):
     ns = k8s.core.v1.Namespace(
@@ -41,16 +44,41 @@ def ensure_cert_manager(component_config: ComponentConfig, k8s_provider: k8s.Pro
         opts=k8s_opts,
     )
 
+    _create_lets_encrypt_issuer(
+        'lets-encrypt',
+        component_config=component_config,
+        server=LETS_ENCRYPT_SERVER_PROD,
+        cloudflare_secret=cloudflare_secret,
+        opts=p.ResourceOptions.merge(k8s_opts, p.ResourceOptions(depends_on=[cert_manager])),
+    )
+
+    _create_lets_encrypt_issuer(
+        'lets-encrypt-staging',
+        component_config=component_config,
+        server=LETS_ENCRYPT_SERVER_STAGING,
+        cloudflare_secret=cloudflare_secret,
+        opts=p.ResourceOptions.merge(k8s_opts, p.ResourceOptions(depends_on=[cert_manager])),
+    )
+
+
+def _create_lets_encrypt_issuer(
+    name: str,
+    *,
+    component_config: ComponentConfig,
+    server: str,
+    cloudflare_secret: k8s.core.v1.Secret,
+    opts: p.ResourceOptions,
+):
     k8s.apiextensions.CustomResource(
-        'letsencrypt-issuer',
+        name,
         api_version='cert-manager.io/v1',
         kind='ClusterIssuer',
-        metadata={'name': 'lets-encrypt'},
+        metadata={'name': name},
         spec={
             'acme': {
-                'server': component_config.cert_manager.acme_server,
+                'server': server,
                 'email': component_config.cert_manager.acme_email,
-                'privateKeySecretRef': {'name': 'lets-encrypt-private-key'},
+                'privateKeySecretRef': {'name': f'{name}-private-key'},
                 'solvers': [
                     {
                         'dns01': {
@@ -65,5 +93,5 @@ def ensure_cert_manager(component_config: ComponentConfig, k8s_provider: k8s.Pro
                 ],
             },
         },
-        opts=p.ResourceOptions.merge(k8s_opts, p.ResourceOptions(depends_on=[cert_manager])),
+        opts=opts,
     )
