@@ -26,7 +26,7 @@ def ensure_cert_manager(component_config: ComponentConfig, k8s_provider: k8s.Pro
     cert_manager = k8s.helm.v3.Release(
         'cert-manager',
         chart='cert-manager',
-        version=component_config.microk8s.cert_manager.version,
+        version=component_config.cert_manager.version,
         repository_opts={'repo': 'https://charts.jetstack.io'},
         values={
             'crds': {'enabled': True},
@@ -37,6 +37,33 @@ def ensure_cert_manager(component_config: ComponentConfig, k8s_provider: k8s.Pro
     cloudflare_secret = k8s.core.v1.Secret(
         'cloudflare-api-token',
         type='Opaque',
-        string_data={'api-token': component_config.microk8s.cloudflare.api_token.value},
+        string_data={'api-token': component_config.cloudflare.api_token.value},
         opts=k8s_opts,
+    )
+
+    k8s.apiextensions.CustomResource(
+        'letsencrypt-issuer',
+        api_version='cert-manager.io/v1',
+        kind='ClusterIssuer',
+        metadata={'name': 'lets-encrypt'},
+        spec={
+            'acme': {
+                'server': component_config.cert_manager.acme_server,
+                'email': component_config.cert_manager.acme_email,
+                'privateKeySecretRef': {'name': 'lets-encrypt-private-key'},
+                'solvers': [
+                    {
+                        'dns01': {
+                            'cloudflare': {
+                                'apiTokenSecretRef': {
+                                    'name': cloudflare_secret.metadata.name,
+                                    'key': 'api-token',
+                                },
+                            },
+                        },
+                    },
+                ],
+            },
+        },
+        opts=p.ResourceOptions.merge(k8s_opts, p.ResourceOptions(depends_on=[cert_manager])),
     )

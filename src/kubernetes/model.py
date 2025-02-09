@@ -33,7 +33,15 @@ class ProxmoxConfig(ConfigBaseModel):
 
 class CertManagerConfig(ConfigBaseModel):
     version: str
-    staging: bool = True
+    acme_staging: bool = True
+    acme_email: pydantic.EmailStr
+
+    @property
+    def acme_server(self):
+        if self.acme_staging:
+            return 'https://acme-staging-v02.api.letsencrypt.org/directory'
+
+        return 'https://acme-v02.api.letsencrypt.org/directory'
 
 
 class CloudflareConfig(ConfigBaseModel):
@@ -68,11 +76,11 @@ class MicroK8sConfig(ConfigBaseModel):
     vlan_id: pydantic.PositiveInt | None = None
     master_nodes: list[VirtualMachineConfig]
     data_disk_mount: str = '/mnt/data'
-    metallb: MetalLbConfig
-    cert_manager: CertManagerConfig
-    cloudflare: CloudflareConfig
 
 
 class ComponentConfig(ConfigBaseModel):
     proxmox: ProxmoxConfig
     microk8s: MicroK8sConfig
+    cloudflare: CloudflareConfig
+    metallb: MetalLbConfig
+    cert_manager: CertManagerConfig
