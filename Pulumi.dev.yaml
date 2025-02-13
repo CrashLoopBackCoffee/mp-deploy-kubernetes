@@ -24,7 +24,7 @@ config:
       ipv4-end: 10.0.10.120
     cert-manager:
       # renovate: datasource=github-releases packageName=cert-manager/cert-manager versioning=semver
-      version: v1.17.0
+      version: v1.17.1
       acme-email: mike@mpagel.de
     cloudflare:
       api-token:
