@@ -1,4 +1,4 @@
-"""Installation of metallb load balancer."""
+"""Installation of cert-manager."""
 
 import pulumi as p
 import pulumi_kubernetes as k8s

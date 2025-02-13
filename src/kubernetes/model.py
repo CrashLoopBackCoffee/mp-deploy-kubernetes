@@ -36,6 +36,10 @@ class CertManagerConfig(ConfigBaseModel):
     acme_email: pydantic.EmailStr
 
 
+class TraefikConfig(ConfigBaseModel):
+    version: str
+
+
 class CloudflareConfig(ConfigBaseModel):
     api_token: EnvVarRef
 
@@ -76,3 +80,4 @@ class ComponentConfig(ConfigBaseModel):
     cloudflare: CloudflareConfig
     metallb: MetalLbConfig
     cert_manager: CertManagerConfig
+    traefik: TraefikConfig

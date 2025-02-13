@@ -26,6 +26,9 @@ config:
       # renovate: datasource=github-releases packageName=cert-manager/cert-manager versioning=semver
       version: v1.17.0
       acme-email: mike@mpagel.de
+    traefik:
+      # renovate: datasource=github-releases packageName=traefik/traefik versioning=semver
+      version: "34.3.0"
     cloudflare:
       api-token:
         envvar: CLOUDFLARE_TOKEN
