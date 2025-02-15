@@ -9,7 +9,11 @@ dependencies = [
     "jinja2>=3.1.4",
     "pulumi-command>=1.0.1",
     "pulumi-kubernetes>=4.21.0",
+    "mp-deploy-utils",
 ]
+
+[tool.uv.sources]
+mp-deploy-utils = { path = "../deploy-utils", editable = true }
 
 [dependency-groups]
 dev=[
