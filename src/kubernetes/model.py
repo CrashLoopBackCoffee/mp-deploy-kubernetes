@@ -36,6 +36,10 @@ class CertManagerConfig(ConfigBaseModel):
     acme_email: pydantic.EmailStr
 
 
+class TraefikConfig(ConfigBaseModel):
+    version: str
+
+
 class CloudflareConfig(ConfigBaseModel):
     api_token: EnvVarRef
 
@@ -68,6 +72,12 @@ class MicroK8sConfig(ConfigBaseModel):
     vlan_id: pydantic.PositiveInt | None = None
     master_nodes: list[VirtualMachineConfig]
     data_disk_mount: str = '/mnt/data'
+    sub_domain: str | None = None
+
+
+class UnifyConfig(ConfigBaseModel):
+    url: pydantic.HttpUrl = pydantic.HttpUrl('https://unifi/')
+    verify_ssl: bool = False
 
 
 class ComponentConfig(ConfigBaseModel):
@@ -76,3 +86,5 @@ class ComponentConfig(ConfigBaseModel):
     cloudflare: CloudflareConfig
     metallb: MetalLbConfig
     cert_manager: CertManagerConfig
+    traefik: TraefikConfig
+    unify: UnifyConfig = pydantic.Field(default_factory=UnifyConfig)

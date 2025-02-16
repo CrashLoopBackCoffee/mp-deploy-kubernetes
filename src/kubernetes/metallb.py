@@ -18,7 +18,7 @@ def ensure_metallb(component_config: ComponentConfig, k8s_provider: k8s.Provider
     namespaced_k8s_provider = k8s.Provider(
         'metallb-provider',
         kubeconfig=k8s_provider.kubeconfig,  # pyright: ignore[reportAttributeAccessIssue]
-        namespace=ns.metadata['name'],
+        namespace=ns.metadata.name,
     )
     k8s_opts = p.ResourceOptions(provider=namespaced_k8s_provider)
 
@@ -27,7 +27,6 @@ def ensure_metallb(component_config: ComponentConfig, k8s_provider: k8s.Provider
         'metallb',
         chart='metallb',
         version=component_config.metallb.version,
-        namespace=ns.metadata.name,
         repository_opts={'repo': 'https://metallb.github.io/metallb'},
         opts=k8s_opts,
     )

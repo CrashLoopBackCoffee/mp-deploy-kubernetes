@@ -11,6 +11,7 @@ import pulumi_proxmoxve as proxmoxve
 from kubernetes.cert_manager import ensure_cert_manager
 from kubernetes.metallb import ensure_metallb
 from kubernetes.model import ComponentConfig
+from kubernetes.traefik import ensure_traefik
 
 
 def create_microk8s(component_config: ComponentConfig, proxmox_provider: proxmoxve.Provider):
@@ -194,3 +195,4 @@ def create_microk8s(component_config: ComponentConfig, proxmox_provider: proxmox
 
         ensure_metallb(component_config, k8s_provider)
         ensure_cert_manager(component_config, k8s_provider)
+        ensure_traefik(component_config, k8s_provider)

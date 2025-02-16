@@ -17,6 +17,7 @@ config:
           data_disk_size_gb: 12
       ssh-public-key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIThrWKIoEj20S3DosaiKBRUGA89qe1xz9hch2+VhSGd mpagel@k8s-dev
       vlan_id: 10
+      sub-domain: app-dev.mpagel.de
     metallb:
       # renovate: datasource=github-releases packageName=metallb/metallb versioning=semver
       version: 0.14.9
@@ -26,6 +27,9 @@ config:
       # renovate: datasource=github-releases packageName=cert-manager/cert-manager versioning=semver
       version: v1.17.1
       acme-email: mike@mpagel.de
+    traefik:
+      # renovate: datasource=github-releases packageName=traefik/traefik versioning=semver
+      version: "34.3.0"
     cloudflare:
       api-token:
         envvar: CLOUDFLARE_TOKEN
