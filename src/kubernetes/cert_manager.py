@@ -52,13 +52,13 @@ def ensure_cert_manager(component_config: ComponentConfig, k8s_provider: k8s.Pro
         opts=p.ResourceOptions.merge(k8s_opts, p.ResourceOptions(depends_on=[cert_manager])),
     )
 
-    _create_lets_encrypt_issuer(
-        'lets-encrypt-staging',
-        component_config=component_config,
-        server=LETS_ENCRYPT_SERVER_STAGING,
-        cloudflare_secret=cloudflare_secret,
-        opts=p.ResourceOptions.merge(k8s_opts, p.ResourceOptions(depends_on=[cert_manager])),
-    )
+    # _create_lets_encrypt_issuer(
+    #     'lets-encrypt-staging',
+    #     component_config=component_config,
+    #     server=LETS_ENCRYPT_SERVER_STAGING,
+    #     cloudflare_secret=cloudflare_secret,
+    #     opts=p.ResourceOptions.merge(k8s_opts, p.ResourceOptions(depends_on=[cert_manager])),
+    # )
 
 
 def _create_lets_encrypt_issuer(

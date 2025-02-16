@@ -1,0 +1,35 @@
+config:
+  kubernetes:config:
+    proxmox:
+      node-name: pve
+      api-endpoint: https://pve-01.mpagel.de:8006
+      api-token:
+        envvar: PROXMOX_API_TOKEN__PVE_01__PULUMI
+    microk8s:
+      master-nodes:
+        - name: k8s-master-0
+          vmid: 120
+          ipv4-address: 10.0.10.2/24
+          cores: 2
+          memory_mb_min: 2048
+          memory_mb_max: 4096
+          root_disk_size_gb: 8
+          data_disk_size_gb: 256
+      ssh-public-key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINkV2VImBNPnGv5kyC9ybGPhMipr0VhFe1n/Ks7Sm8k4 mpagel@k8s-prod
+      vlan_id: 10
+      sub-domain: app.mpagel.de
+    metallb:
+      # renovate: datasource=github-releases packageName=metallb/metallb versioning=semver
+      version: 0.14.9
+      ipv4-start: 10.0.10.10
+      ipv4-end: 10.0.10.99
+    cert-manager:
+      # renovate: datasource=github-releases packageName=cert-manager/cert-manager versioning=semver
+      version: v1.17.1
+      acme-email: mike@mpagel.de
+    traefik:
+      # renovate: datasource=github-releases packageName=traefik/traefik versioning=semver
+      version: "34.3.0"
+    cloudflare:
+      api-token:
+        envvar: CLOUDFLARE_TOKEN

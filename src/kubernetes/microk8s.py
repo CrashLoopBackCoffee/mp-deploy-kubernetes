@@ -1,5 +1,6 @@
 """Confoguration of Microk8s on Proxmox VE."""
 
+import os
 import pathlib
 
 import jinja2
@@ -7,6 +8,8 @@ import pulumi as p
 import pulumi_command as command
 import pulumi_kubernetes as k8s
 import pulumi_proxmoxve as proxmoxve
+
+from mp.deploy_utils import unify
 
 from kubernetes.cert_manager import ensure_cert_manager
 from kubernetes.metallb import ensure_metallb
@@ -149,6 +152,21 @@ def create_microk8s(component_config: ComponentConfig, proxmox_provider: proxmox
 
         master_vm_ipv4 = master_vm.ipv4_addresses[1][0]
         p.export(f'{master_config.name}-ipv4', master_vm_ipv4)
+
+        # create DNS entries fpr master nodes:
+        # create wildcard DNS record:
+        dns_provider = unify.UnifyDnsRecordProvider(
+            base_url=str(component_config.unify.url),
+            api_token=os.environ['UNIFY_API_TOKEN__PULUMI'],
+            verify_ssl=component_config.unify.verify_ssl,
+        )
+
+        unify.UnifyDnsRecord(
+            f'{master_config.name}-dns',
+            domain_name=f'{master_config.name}.{component_config.unify.internal_domain}',
+            ipv4=master_vm_ipv4,
+            provider=dns_provider,
+        )
 
         if not first_master_ipv4:
             first_master_ipv4 = master_vm_ipv4

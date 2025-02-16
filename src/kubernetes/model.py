@@ -78,6 +78,7 @@ class MicroK8sConfig(ConfigBaseModel):
 class UnifyConfig(ConfigBaseModel):
     url: pydantic.HttpUrl = pydantic.HttpUrl('https://unifi/')
     verify_ssl: bool = False
+    internal_domain: str = 'erx.box'
 
 
 class ComponentConfig(ConfigBaseModel):

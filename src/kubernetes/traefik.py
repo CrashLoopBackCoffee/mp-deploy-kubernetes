@@ -99,7 +99,7 @@ def ensure_traefik(component_config: ComponentConfig, k8s_provider: k8s.Provider
         )
 
         unify.UnifyDnsRecord(
-            'dns',
+            'traefik-dns',
             domain_name=wildcard_domain,
             ipv4=ipv4,
             provider=dns_provider,
