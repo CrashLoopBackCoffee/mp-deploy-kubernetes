@@ -153,8 +153,7 @@ def create_microk8s(component_config: ComponentConfig, proxmox_provider: proxmox
         master_vm_ipv4 = master_vm.ipv4_addresses[1][0]
         p.export(f'{master_config.name}-ipv4', master_vm_ipv4)
 
-        # create DNS entries fpr master nodes:
-        # create wildcard DNS record:
+        # create DNS entries for master nodes:
         dns_provider = unify.UnifyDnsRecordProvider(
             base_url=str(component_config.unify.url),
             api_token=os.environ['UNIFY_API_TOKEN__PULUMI'],
