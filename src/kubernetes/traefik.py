@@ -10,7 +10,13 @@ from mp.deploy_utils import unify
 from kubernetes.model import ComponentConfig
 
 
-def ensure_traefik(component_config: ComponentConfig, k8s_provider: k8s.Provider):
+def ensure_traefik(
+    component_config: ComponentConfig,
+    *,
+    metallb: p.Resource,
+    cert_manager: p.Resource,
+    k8s_provider: k8s.Provider,
+):
     ns = k8s.core.v1.Namespace(
         'traefik',
         metadata={
@@ -38,7 +44,8 @@ def ensure_traefik(component_config: ComponentConfig, k8s_provider: k8s.Provider
                 '--api.insecure=true',
             ]
         },
-        opts=k8s_opts,
+        # depend on metallb to ensure the service gets a public IP queried below:
+        opts=p.ResourceOptions.merge(k8s_opts, p.ResourceOptions(depends_on=[metallb])),
     )
 
     service = k8s.core.v1.Service.get(
@@ -74,7 +81,7 @@ def ensure_traefik(component_config: ComponentConfig, k8s_provider: k8s.Provider
                     'name': 'lets-encrypt',
                 },
             },
-            opts=k8s_opts,
+            opts=p.ResourceOptions.merge(k8s_opts, p.ResourceOptions(depends_on=[cert_manager])),
         )
 
         # use this certificate as traefik's new default:

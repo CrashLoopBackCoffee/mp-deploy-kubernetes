@@ -9,7 +9,9 @@ LETS_ENCRYPT_SERVER_PROD = 'https://acme-v02.api.letsencrypt.org/directory'
 LETS_ENCRYPT_SERVER_STAGING = 'https://acme-staging-v02.api.letsencrypt.org/directory'
 
 
-def ensure_cert_manager(component_config: ComponentConfig, k8s_provider: k8s.Provider):
+def ensure_cert_manager(
+    component_config: ComponentConfig, k8s_provider: k8s.Provider
+) -> p.Resource:
     ns = k8s.core.v1.Namespace(
         'cert-manager',
         metadata={
@@ -44,21 +46,13 @@ def ensure_cert_manager(component_config: ComponentConfig, k8s_provider: k8s.Pro
         opts=k8s_opts,
     )
 
-    _create_lets_encrypt_issuer(
+    return _create_lets_encrypt_issuer(
         'lets-encrypt',
         component_config=component_config,
         server=LETS_ENCRYPT_SERVER_PROD,
         cloudflare_secret=cloudflare_secret,
         opts=p.ResourceOptions.merge(k8s_opts, p.ResourceOptions(depends_on=[cert_manager])),
     )
-
-    # _create_lets_encrypt_issuer(
-    #     'lets-encrypt-staging',
-    #     component_config=component_config,
-    #     server=LETS_ENCRYPT_SERVER_STAGING,
-    #     cloudflare_secret=cloudflare_secret,
-    #     opts=p.ResourceOptions.merge(k8s_opts, p.ResourceOptions(depends_on=[cert_manager])),
-    # )
 
 
 def _create_lets_encrypt_issuer(
@@ -68,8 +62,8 @@ def _create_lets_encrypt_issuer(
     server: str,
     cloudflare_secret: k8s.core.v1.Secret,
     opts: p.ResourceOptions,
-):
-    k8s.apiextensions.CustomResource(
+) -> k8s.apiextensions.CustomResource:
+    return k8s.apiextensions.CustomResource(
         name,
         api_version='cert-manager.io/v1',
         kind='ClusterIssuer',

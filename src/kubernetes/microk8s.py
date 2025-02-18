@@ -211,6 +211,11 @@ def create_microk8s(component_config: ComponentConfig, proxmox_provider: proxmox
             opts=k8s_opts,
         )
 
-        ensure_metallb(component_config, k8s_provider)
-        ensure_cert_manager(component_config, k8s_provider)
-        ensure_traefik(component_config, k8s_provider)
+        metallb = ensure_metallb(component_config, k8s_provider)
+        cert_manager = ensure_cert_manager(component_config, k8s_provider)
+        ensure_traefik(
+            component_config,
+            metallb=metallb,
+            cert_manager=cert_manager,
+            k8s_provider=k8s_provider,
+        )
