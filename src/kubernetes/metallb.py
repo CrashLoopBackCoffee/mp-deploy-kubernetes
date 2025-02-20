@@ -6,7 +6,7 @@ import pulumi_kubernetes as k8s
 from kubernetes.model import ComponentConfig
 
 
-def ensure_metallb(component_config: ComponentConfig, k8s_provider: k8s.Provider):
+def ensure_metallb(component_config: ComponentConfig, k8s_provider: k8s.Provider) -> p.Resource:
     ns = k8s.core.v1.Namespace(
         'metallb-system',
         metadata={
@@ -51,7 +51,7 @@ def ensure_metallb(component_config: ComponentConfig, k8s_provider: k8s.Provider
         opts=p.ResourceOptions.merge(k8s_opts, p.ResourceOptions(depends_on=[metallb])),
     )
 
-    k8s.apiextensions.CustomResource(
+    return k8s.apiextensions.CustomResource(
         'default-l2-advertisment',
         api_version='metallb.io/v1beta1',
         kind='L2Advertisement',
