@@ -217,6 +217,19 @@ def create_microk8s(component_config: ComponentConfig, proxmox_provider: proxmox
             opts=k8s_opts,
         )
 
+        # create second hostpath storage class for precious data:
+        k8s.storage.v1.StorageClass(
+            'data-hostpath-retained',
+            metadata={
+                'name': 'data-hostpath-retained',
+            },
+            provisioner='microk8s.io/hostpath',
+            parameters={'pvDir': component_config.microk8s.data_disk_mount},
+            reclaim_policy='Retain',
+            volume_binding_mode='WaitForFirstConsumer',
+            opts=k8s_opts,
+        )
+
         # remove the default annotation from the hostpath storage class (just setting the pvDir
         # parameter is not possible as patches do not allow for parameter updates):
         k8s.storage.v1.StorageClassPatch(
