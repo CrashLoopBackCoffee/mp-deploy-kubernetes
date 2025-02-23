@@ -196,6 +196,7 @@ def create_microk8s(component_config: ComponentConfig, proxmox_provider: proxmox
         k8s_provider = k8s.Provider(
             'microk8s',
             kubeconfig=kube_config,
+            enable_server_side_apply=True,
         )
 
         k8s_opts = p.ResourceOptions(provider=k8s_provider)
@@ -203,10 +204,31 @@ def create_microk8s(component_config: ComponentConfig, proxmox_provider: proxmox
         # create hostpath storage class to use mounted data disk:
         k8s.storage.v1.StorageClass(
             'data-hostpath',
+            metadata={
+                'name': 'data-hostpath',
+                'annotations': {
+                    'storageclass.kubernetes.io/is-default-class': 'true',
+                },
+            },
             provisioner='microk8s.io/hostpath',
             parameters={'pvDir': component_config.microk8s.data_disk_mount},
             reclaim_policy='Delete',
             volume_binding_mode='WaitForFirstConsumer',
+            opts=k8s_opts,
+        )
+
+        # remove the default annotation from the hostpath storage class (just setting the pvDir
+        # parameter is not possible as patches do not allow for parameter updates):
+        k8s.storage.v1.StorageClassPatch(
+            'hostpath-old-default-removal',
+            metadata={
+                # name as given by microk8s:
+                'name': 'microk8s-hostpath',
+                'annotations': {
+                    'storageclass.kubernetes.io/is-default-class': 'false',
+                    'pulumi.com/patchForce': 'true',
+                },
+            },
             opts=k8s_opts,
         )
 
