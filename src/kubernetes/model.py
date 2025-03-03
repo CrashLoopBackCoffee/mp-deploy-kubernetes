@@ -40,6 +40,10 @@ class TraefikConfig(ConfigBaseModel):
     version: str
 
 
+class CsiDriverSmbConfig(ConfigBaseModel):
+    version: str
+
+
 class CloudflareConfig(ConfigBaseModel):
     api_token: EnvVarRef
 
@@ -89,3 +93,4 @@ class ComponentConfig(ConfigBaseModel):
     cert_manager: CertManagerConfig
     traefik: TraefikConfig
     unify: UnifyConfig = pydantic.Field(default_factory=UnifyConfig)
+    csi_driver_smb: CsiDriverSmbConfig

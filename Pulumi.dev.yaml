@@ -33,3 +33,6 @@ config:
     cloudflare:
       api-token:
         envvar: CLOUDFLARE_TOKEN
+    csi-driver-smb:
+      # renovate: datasource=github-releases packageName=kubernetes-csi/csi-driver-smb versioning=loose
+      version: v1.17.0
