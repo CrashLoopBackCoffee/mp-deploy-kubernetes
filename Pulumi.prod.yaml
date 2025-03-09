@@ -12,7 +12,7 @@ config:
           ipv4-address: 10.0.10.2/24
           cores: 2
           memory_mb_min: 2048
-          memory_mb_max: 4096
+          memory_mb_max: 8192
           root_disk_size_gb: 8
           data_disk_size_gb: 256
       ssh-public-key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINkV2VImBNPnGv5kyC9ybGPhMipr0VhFe1n/Ks7Sm8k4 mpagel@k8s-prod
