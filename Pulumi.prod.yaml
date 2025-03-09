@@ -13,7 +13,7 @@ config:
           cores: 2
           memory_mb_min: 2048
           memory_mb_max: 8192
-          root_disk_size_gb: 8
+          root_disk_size_gb: 64
           data_disk_size_gb: 256
       ssh-public-key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINkV2VImBNPnGv5kyC9ybGPhMipr0VhFe1n/Ks7Sm8k4 mpagel@k8s-prod
       vlan_id: 10
@@ -33,3 +33,6 @@ config:
     cloudflare:
       api-token:
         envvar: CLOUDFLARE_TOKEN
+    csi-driver-smb:
+      # renovate: datasource=github-releases packageName=kubernetes-csi/csi-driver-smb versioning=loose
+      version: v1.17.0
