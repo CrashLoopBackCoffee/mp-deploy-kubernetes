@@ -35,6 +35,9 @@ runcmd:
     net-tools
     vim
 
+  # ensure UTF-8 iocharset is available, e.g. for SMB mounts:
+  - DEBIAN_FRONTEND=noninteractive apt-get install -y linux-modules-extra-$(uname -r)
+
   # microk8s installation:
   - snap install microk8s --classic
   - usermod -a -G microk8s {{ username }}
